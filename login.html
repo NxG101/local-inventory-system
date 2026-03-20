@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="login-wrapper">
+
+<div class="login-card">
+
+<div class="login-logo">STOCK.</div>
+
+<div class="login-title">Login</div>
+<div class="login-sub">Access inventory manager</div>
+
+<div class="error-msg" id="error">Invalid credentials</div>
+
+<form class="login-form" id="login-form">
+
+<div class="form-group">
+<input type="text" id="username" placeholder="Username" required>
+</div>
+
+<div class="form-group">
+<input type="password" id="password" placeholder="Password" required>
+</div>
+
+<button class="btn login-btn">Login</button>
+
+</form>
+
+<div class="login-footer">
+Don't have an account? <a href="signup.html">Sign Up</a>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+document.getElementById("login-form").addEventListener("submit",function(e){
+
+e.preventDefault();
+
+let user = document.getElementById("username").value;
+let pass = document.getElementById("password").value;
+
+let storedUser = localStorage.getItem("adminUser");
+let storedPass = localStorage.getItem("adminPass");
+
+if(user === storedUser && pass === storedPass){
+
+window.location.href = "inventory.html";
+
+}else{
+
+document.getElementById("error").style.display="block";
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
