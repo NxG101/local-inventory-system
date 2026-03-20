@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Viewer | Minimal Inventory</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+.visitor-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:2rem;
+}
+
+.auth-buttons{
+display:flex;
+gap:10px;
+}
+
+.auth-buttons a{
+text-decoration:none;
+}
+
+.auth-btn{
+padding:0.5rem 1rem;
+border-radius:6px;
+font-size:0.85rem;
+border:1px solid var(--border);
+background:var(--bg-card);
+cursor:pointer;
+}
+
+.auth-btn.primary{
+background:var(--text-main);
+color:white;
+border:none;
+}
+
+.auth-btn:hover{
+opacity:0.9;
+}
+</style>
+</head>
+
+<body>
+
+<main style="width:100%; padding:2rem 3rem;">
+
+<div class="visitor-header">
+
+<div>
+<h1>Available Stock</h1>
+<p style="color:var(--text-muted);font-size:0.9rem;">
+View current available clothing items
+</p>
+</div>
+
+<div class="auth-buttons">
+<a href="login.html"><button class="auth-btn">Log In</button></a>
+<a href="signup.html"><button class="auth-btn primary">Sign Up</button></a>
+</div>
+
+</div>
+
+<!-- Inventory Table -->
+
+<div class="table-container">
+<table>
+
+<thead>
+<tr>
+<th>Product</th>
+<th>SKU</th>
+<th>Category</th>
+<th>Size</th>
+<th>Color</th>
+<th>Price</th>
+<th>Stock</th>
+</tr>
+</thead>
+
+<tbody id="visitor-inventory">
+
+</tbody>
+
+</table>
+</div>
+
+</main>
+
+<script>
+
+let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
+
+const table = document.getElementById("visitor-inventory");
+
+function render(){
+
+table.innerHTML="";
+
+inventory.forEach(item => {
+
+if(item.stock > 0){
+
+table.innerHTML += `
+<tr>
+<td>${item.name}</td>
+<td>${item.sku}</td>
+<td>${item.category}</td>
+<td>${item.size}</td>
+<td>${item.color}</td>
+<td>₱${item.price}</td>
+<td>${item.stock}</td>
+</tr>
+`;
+
+}
+
+});
+
+}
+
+render();
+
+</script>
+
+</body>
+</html>
