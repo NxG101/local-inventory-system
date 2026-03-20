@@ -92,6 +92,8 @@ View current available clothing items
 
 <script>
 
+window.onload = loadInventory;
+
 let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
 
 const table = document.getElementById("visitor-inventory");
