@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock | Minimal Inventory</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside>
+        <div class="logo">STOCK.</div>
+
+        <nav>
+            <a href="inventory.html" class="active">Inventory</a>
+            <a href="categories.html">Categories</a>
+            <a href="settings.html">Settings</a>
+        </nav>
+
+        <!-- Account Display -->
+        <div class="account-panel">
+            <span></span>
+                <img src="https://i.pravatar.cc/60" class="profile-img">
+
+                <div class="profile-info">
+                    <strong id="username">Admin</strong>
+                    <span>Inventory Manager</span>
+                </div>
+
+            </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="content">
+        <header>
+            <div>
+                <h1>Inventory</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Manage your clothing stock levels</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn" onclick="exportCSV()">Export CSV</button>
+                <button class="btn" onclick="openModal()">+ Add Item</button>
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Items</div>
+                <div class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Low Stock Alert</div>
+                <div class="stat-value" style="color: var(--danger);">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Value</div>
+                <div class="stat-value">₱0</div>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="inventory-tools">
+            <input type="text" id="search" placeholder="Search product or SKU...">
+
+            <select id="filter-category">
+                <option value="all">All Categories</option>
+                <option value="Top">Top</option>
+                <option value="Bottom">Bottom</option>
+                <option value="Outerwear">Outerwear</option>
+                <option value="Accessories">Accessories</option>
+            </select>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>SKU</th>
+                        <th>Category</th>
+                        <th>Size</th>
+                        <th>Color</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="inventory-body">
+                    <!-- Data will be injected here via JS -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Add Item Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2>Add New Item</h2>
+            <form id="add-form">
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <input type="text" id="p-name" placeholder="e.g. Cotton T-Shirt" required>
+                </div>
+                <div class="form-group">
+                    <label>SKU</label>
+                    <input type="text" id="p-sku" placeholder="e.g. TS-001" required>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex:1">
+                        <label>Category</label>
+                        <select id="p-cat">
+                            <option>Top</option>
+                            <option>Bottom</option>
+                            <option>Outerwear</option>
+                            <option>Accessories</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Size</label>
+                        <select id="p-size">
+                            <option>S</option>
+                            <option>M</option>
+                            <option>L</option>
+                            <option>XL</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <input type="text" id="p-color" placeholder="e.g. Navy Blue" required>
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input type="number" id="p-price" placeholder="e.g. 20" required>
+                </div>
+                <div class="form-group">
+                    <label>Product Image</label>
+                    <input type="file" id="p-image" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label>Stock Quantity</label>
+                    <input type="number" id="p-stock" placeholder="0" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
