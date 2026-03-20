@@ -71,6 +71,7 @@ View current available clothing items
 
 <thead>
 <tr>
+<th>Image</th>
 <th>Product</th>
 <th>SKU</th>
 <th>Category</th>
@@ -98,28 +99,24 @@ const table = document.getElementById("visitor-inventory");
 
 async function loadInventory(){
     table.innerHTML = "";
-
     const snapshot = await getDocs(collection(db,"inventory"));
-
     snapshot.forEach(doc=>{
         const item = doc.data();
-
-        if(item.quantity > 0){
+        if(item.stock > 0){
             table.innerHTML += `
             <tr>
                 <td>${item.name}</td>
-                <td>${doc.id}</td>
+                <td>${item.sku || doc.id}</td>
                 <td>${item.category || "-"}</td>
-                <td>-</td>
-                <td>-</td>
+                <td>${item.size || "-"}</td>
+                <td>${item.color || "-"}</td>
                 <td>₱${item.price}</td>
-                <td>${item.quantity}</td>
+                <td>${item.stock}</td>
             </tr>
             `;
         }
     });
 }
-
 window.onload = loadInventory;
 </script>
 
