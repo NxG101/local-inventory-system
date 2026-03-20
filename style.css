@@ -599,3 +599,35 @@ background:var(--bg-body);
 outline:none;
 border-color:var(--accent);
 }
+
+/* SPECIAL BUTTON COLORS */
+
+.btn-green{
+background: var(--success);
+color:white;
+border:none;
+padding:0.6rem 1.2rem;
+border-radius:6px;
+cursor:pointer;
+font-size:0.875rem;
+font-weight:500;
+}
+
+.btn-green:hover{
+opacity:0.9;
+}
+
+.btn-red{
+background: var(--danger);
+color:white;
+border:none;
+padding:0.6rem 1.2rem;
+border-radius:6px;
+cursor:pointer;
+font-size:0.875rem;
+font-weight:500;
+}
+
+.btn-red:hover{
+opacity:0.9;
+}
