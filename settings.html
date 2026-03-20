@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Settings | Minimal Inventory</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<aside>
+
+<div class="logo">STOCK.</div>
+
+<nav>
+<a href="inventory.html">Inventory</a>
+<a href="categories.html">Categories</a>
+<a href="settings.html" class="active">Settings</a>
+</nav>
+
+<div class="account-panel">
+
+<img src="https://i.pravatar.cc/60" class="profile-img">
+
+<div class="profile-info">
+<strong>Admin</strong>
+<span>Inventory Manager</span>
+</div>
+
+</div>
+
+</aside>
+
+<!-- Main Content -->
+<main>
+
+<header>
+
+<div>
+<h1>Settings</h1>
+<p style="color:var(--text-muted);font-size:0.9rem;margin-top:0.25rem;">
+System preferences
+</p>
+</div>
+
+</header>
+
+<div class="table-container" style="padding:1.5rem">
+
+<div class="form-group" style="display:flex;justify-content:space-between;align-items:center">
+
+<div>
+<strong>Change Theme</strong>
+<p style="font-size:0.8rem;color:var(--text-muted)">
+Enable dark theme for the interface or light theme
+</p>
+</div>
+
+<label class="switch">
+<input type="checkbox" id="theme-toggle">
+<span class="slider"></span>
+</label>
+
+</div>
+
+</div>
+
+</main>
+
+<script src="script.js"></script>
+
+</body>
+</html>
