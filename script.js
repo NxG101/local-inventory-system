@@ -1,9 +1,18 @@
 import {initializeApp 
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 
-import {getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc
+import {getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, 
+createUserWithEmailAndPassword, updatePassword, signOut } 
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        window.location.href = "login.html";
+    }
+});
 
 // Firebase Initialization
 const firebaseConfig = {
@@ -15,6 +24,7 @@ messagingSenderId: "437284393762",
 appId: "1:437284393762:web:d7441ef89cf88e35f94b7b"
 };
 
+const auth = getAuth(app);
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -25,8 +35,9 @@ let ADMIN_KEY = "";
 
 async function fetchAdminKey(){
 const keyDoc = await getDoc(doc(db,"settings","adminConfig"));
-const ADMIN_KEY = keyDoc.data().adminKey;
+ADMIN_KEY = keyDoc.data().adminKey;
 }
+
 
 // Call at startup
 fetchAdminKey();
@@ -67,7 +78,7 @@ let name = document.getElementById("item-name").value;
 let quantity = document.getElementById("item-qty").value;
 let price = document.getElementById("item-price").value;
 
-if(!name || !quantity){
+if(!name || !quantity || !price){
 alert("Please fill all fields");
 return;
 }
@@ -79,6 +90,11 @@ quantity:parseInt(quantity),
 price:parseFloat(price),
 dateAdded:new Date().toISOString()
 });
+
+if(isNaN(quantity) || isNaN(price)){
+    alert("Invalid number input");
+    return;
+}
 
 alert("Item added successfully");
 loadInventory();
@@ -97,18 +113,15 @@ return;
 
 let key = prompt("Enter Admin Key to confirm reset:");
 
-if(key !== "OWNER123"){
+if(key !== ADMIN_KEY){
 alert("Invalid Admin Key!");
 return;
 }
 
 const querySnapshot = await getDocs(collection(db,"inventory"));
-
-querySnapshot.forEach(async (item)=>{
-
-await deleteDoc(doc(db,"inventory",item.id));
-
-});
+for (const item of querySnapshot.docs){
+    await deleteDoc(doc(db,"inventory",item.id));
+}
 
 alert("Inventory cleared");
 
@@ -125,7 +138,7 @@ return;
 
 let key = prompt("Enter Admin Key");
 
-if(key !== "OWNER123"){
+if(key !== ADMIN_KEY){
 alert("Invalid key");
 return;
 }
@@ -155,103 +168,100 @@ link.click();
 // ------------ADMIN FUNCTIONS--------------//
 
 // Admin Account System
+import { getAuth, createUserWithEmailAndPassword } 
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
 async function createAdmin(){
 
-let username = document.getElementById("username").value;
-
+let email = document.getElementById("username").value;
 let password = document.getElementById("password").value;
-
 let adminKey = document.getElementById("admin-key").value;
 
-if(adminKey !== "OWNER123"){
-
-alert("Invalid Admin Key");
-
-return;
-
+if(adminKey !== ADMIN_KEY){
+    alert("Invalid Admin Key");
+    return;
 }
 
-await addDoc(collection(db,"admins"),{
+try{
+    await createUserWithEmailAndPassword(auth, email, password);
 
-username:username,
-password:password,
-role:"admin"
+    // Optional: store role only (no password)
+    await addDoc(collection(db,"admins"),{
+        email: email,
+        role: "admin"
+    });
 
-});
+    alert("Admin account created securely!");
 
-alert("Admin account created");
-
+}catch(error){
+    alert(error.message);
+}
 }
 
 // Login Using Firebase Database "FireStore"
+import { signInWithEmailAndPassword } 
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
 async function login(){
 
-let username = document.getElementById("username").value;
-
+let email = document.getElementById("username").value;
 let password = document.getElementById("password").value;
 
-const querySnapshot = await getDocs(collection(db,"admins"));
+try{
+    await signInWithEmailAndPassword(auth, email, password);
 
-let success=false;
+    localStorage.setItem("adminUser", email);
+    window.location.href = "inventory.html";
 
-querySnapshot.forEach((docUser)=>{
-
-let data = docUser.data();
-
-if(data.username === username && data.password === password){
-
-success=true;
-
+}catch(error){
+    alert("Invalid login");
 }
-
-});
-
-if(success){
-
-localStorage.setItem("adminUser",username);
-
-window.location.href="inventory.html";
-
-}else{
-
-alert("Invalid login");
-
 }
-
-}
-
 
 // Change Password
-function changePassword(){
+import { updatePassword } 
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+async function changePassword(){
 
 let key = prompt("Enter Admin Key before changing password:");
 
 if(key !== ADMIN_KEY){
-alert("Invalid Admin Key!");
-return;
+    alert("Invalid Admin Key!");
+    return;
 }
 
 let newPass = document.getElementById("new-password").value;
 
 if(!newPass){
-alert("Password cannot be empty");
-return;
+    alert("Password cannot be empty");
+    return;
 }
 
-localStorage.setItem("adminPass", newPass);
+try{
+    const user = auth.currentUser;
+    await updatePassword(user, newPass);
 
-alert("Password updated successfully!");
+    alert("Password updated securely!");
 
+}catch(error){
+    alert(error.message);
+}
 }
 
 // LOGOUT
+import { signOut } 
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
 function logout(){
 
 if(confirm("Are you sure you want to logout?")){
-localStorage.removeItem("adminUser");
-window.location.href="login.html";
-}
 
+    signOut(auth);
+    localStorage.removeItem("adminUser");
+    window.location.href="login.html";
+
+}
 }
 
 // Expose functions to window
@@ -263,3 +273,5 @@ window.createAdmin = createAdmin;
 window.login = login;
 window.changePassword = changePassword;
 window.logout = logout;
+
+export { db };

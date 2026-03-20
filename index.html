@@ -90,42 +90,37 @@ View current available clothing items
 
 </main>
 
-<script>
-
-window.onload = loadInventory;
-
-let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
+<script type="module">
+import { db } from "./script.js";
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 const table = document.getElementById("visitor-inventory");
 
-function render(){
+async function loadInventory(){
+    table.innerHTML = "";
 
-table.innerHTML="";
+    const snapshot = await getDocs(collection(db,"inventory"));
 
-inventory.forEach(item => {
+    snapshot.forEach(doc=>{
+        const item = doc.data();
 
-if(item.stock > 0){
-
-table.innerHTML += `
-<tr>
-<td>${item.name}</td>
-<td>${item.sku}</td>
-<td>${item.category}</td>
-<td>${item.size}</td>
-<td>${item.color}</td>
-<td>₱${item.price}</td>
-<td>${item.stock}</td>
-</tr>
-`;
-
+        if(item.quantity > 0){
+            table.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td>${doc.id}</td>
+                <td>${item.category || "-"}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>₱${item.price}</td>
+                <td>${item.quantity}</td>
+            </tr>
+            `;
+        }
+    });
 }
 
-});
-
-}
-
-render();
-
+window.onload = loadInventory;
 </script>
 
 </body>

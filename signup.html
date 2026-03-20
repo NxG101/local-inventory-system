@@ -45,38 +45,13 @@ Already have an account? <a href="login.html">Login</a>
 
 </div>
 
-<script>
+<script type="module">
+import { createAdmin } from "./script.js";
 
-const OWNER_KEY = "OWNER123";
-
-document.getElementById("signup-form").addEventListener("submit",function(e){
-
-e.preventDefault();
-
-let user = document.getElementById("newUser").value;
-let pass = document.getElementById("newPass").value;
-let key  = document.getElementById("adminKey").value;
-
-let error = document.getElementById("error");
-
-if(key !== OWNER_KEY){
-
-error.style.display="block";
-error.innerText="Invalid Admin Key. Please ask the owner.";
-
-return;
-
-}
-
-localStorage.setItem("adminUser",user);
-localStorage.setItem("adminPass",pass);
-
-alert("Admin account created successfully!");
-
-window.location.href="login.html";
-
+document.getElementById("signup-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    createAdmin();
 });
-
 </script>
 
 </body>

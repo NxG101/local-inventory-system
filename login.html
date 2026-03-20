@@ -41,30 +41,13 @@ Don't have an account? <a href="signup.html">Sign Up</a>
 
 </div>
 
-<script>
+<script type="module">
+import { login } from "./script.js";
 
-document.getElementById("login-form").addEventListener("submit",function(e){
-
-e.preventDefault();
-
-let user = document.getElementById("username").value;
-let pass = document.getElementById("password").value;
-
-let storedUser = localStorage.getItem("adminUser");
-let storedPass = localStorage.getItem("adminPass");
-
-if(user === storedUser && pass === storedPass){
-
-window.location.href = "inventory.html";
-
-}else{
-
-document.getElementById("error").style.display="block";
-
-}
-
+document.getElementById("login-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    login();
 });
-
 </script>
 
 </body>
