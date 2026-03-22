@@ -58,16 +58,17 @@ fetchAdminKey();
 onAuthStateChanged(auth, (user) => {
   const protectedPages = ["inventory.html", "categories.html", "settings.html"];
   const currentPage = window.location.pathname.split("/").pop();
-  
+
+  // Redirect if not logged in
   if (!user && protectedPages.includes(currentPage)) {
     window.location.href = "login.html";
+    return;
   }
-  
+
   if (user) {
-    document.querySelectorAll("#username, #sidebar-username").forEach(el => {
-      el.textContent = user.email ? user.email.split("@")[0] : "Admin";
-    });
+    loadProfile(); // Firestore loads username + profile image
   }
+
 });
 
 // ================== INVENTORY (updated – no userId filter) ==================
@@ -281,13 +282,51 @@ function closeCategoryModal() {
 }
 
 // ================== SETTINGS & BACKUP ==================
-function saveProfile() {
-  const name = document.getElementById("profile-username").value.trim();
-  if (name) {
-    document.querySelectorAll("#username, #sidebar-username").forEach(el => el.textContent = name);
-    alert("Profile updated!");
+async function saveProfile() {
+
+  const user = auth.currentUser;
+  if (!user) return alert("User not logged in");
+
+  const username = document.getElementById("profile-username").value.trim();
+  const file = document.getElementById("profileImageInput").files[0];
+
+  let imageUrl = null;
+
+  try {
+
+    // Upload new profile image
+    if (file) {
+
+      const storageRef = ref(storage, `profileImages/${user.uid}`);
+      await uploadBytes(storageRef, file);
+
+      imageUrl = await getDownloadURL(storageRef);
+
+      document.getElementById("profilePreview").src = imageUrl;
+    }
+
+    const updateData = {};
+
+    if (username) updateData.username = username;
+    if (imageUrl) updateData.profileImage = imageUrl;
+
+    await updateDoc(doc(db, "users", user.uid), updateData);
+
+    // Update UI
+    if (username) {
+      document.querySelectorAll("#username,#sidebar-username")
+        .forEach(el => el.textContent = username);
+    }
+
+    alert("Profile updated successfully!");
+
+  } catch (error) {
+    console.error(error);
+    alert("Error updating profile");
   }
+
 }
+
 function saveAlert() {
   const val = document.getElementById("low-stock").value;
   alert(`Low-stock threshold set to ${val} (badge uses 5 for demo)`);
@@ -384,6 +423,31 @@ function logout() {
   if (confirm("Logout?")) {
     signOut(auth);
     window.location.href = "login.html";
+  }
+}
+
+async function loadProfile() {
+
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+
+    const data = userSnap.data();
+
+    if (data.username) {
+      document.getElementById("profile-username").value = data.username;
+      document.querySelectorAll("#username,#sidebar-username")
+        .forEach(el => el.textContent = data.username);
+    }
+
+    if (data.profileImage) {
+      document.getElementById("profilePreview").src = data.profileImage;
+    }
+
   }
 }
 
