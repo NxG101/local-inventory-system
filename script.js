@@ -36,20 +36,22 @@ let allInventory = [];
 // ================== ADMIN KEY ==================
 async function fetchAdminKey() {
   try {
+
     const keyDocRef = doc(db, "settings", "adminConfig");
     const keyDoc = await getDoc(keyDocRef);
+
     if (keyDoc.exists()) {
       ADMIN_KEY = keyDoc.data().adminKey;
+      console.log("✅ Admin key fetched from Firestore:", ADMIN_KEY);
     } else {
-      await setDoc(keyDocRef, { adminKey: "admin123" });
-      ADMIN_KEY = "admin123";
-      console.log("✅ Default admin key 'admin123' created");
+      console.error("❌ adminConfig document not found in Firestore");
     }
-  } catch (e) {
-    console.error(e);
-    ADMIN_KEY = "admin123";
+
+  } catch (error) {
+    console.error("❌ Error fetching admin key:", error);
   }
 }
+
 fetchAdminKey();
 
 // ================== AUTH GUARD & PROFILE SYNC ==================
@@ -334,8 +336,8 @@ async function exportCSV() {
 async function createAdmin() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
-  const email = document.getElementById("newUser").value.trim();
-  const password = document.getElementById("newPass").value;
+  const email = document.getElementById("newEmail").value.trim();
+  const password = document.getElementById("newPassword").value;
   const key = document.getElementById("adminKey").value;
 
   if (key !== ADMIN_KEY) {
@@ -349,6 +351,7 @@ async function createAdmin() {
     alert("Admin created! Logging in...");
     window.location.href = "login.html";
   } catch (err) {
+    console.error(err); 
     errorEl.textContent = err.message;
     errorEl.style.display = "block";
   }
@@ -358,7 +361,9 @@ async function login() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
   try {
-    await signInWithEmailAndPassword(auth, document.getElementById("newUser").value.trim(), document.getElementById("password").value);
+    await signInWithEmailAndPassword(
+      auth, document.getElementById("loginEmail").value.trim(), 
+      document.getElementById("password").value);
     window.location.href = "inventory.html";
   } catch (err) {
     errorEl.textContent = "Invalid credentials";
