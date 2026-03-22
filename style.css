@@ -631,3 +631,43 @@ font-weight:500;
 .btn-red:hover{
 opacity:0.9;
 }
+
+/* General Button Style */
+button{
+padding:10px 18px;
+border:none;
+border-radius:6px;
+font-size:14px;
+cursor:pointer;
+margin:5px;
+}
+
+/* Export Backup Button */
+.export-btn{
+background-color:#28a745;
+color:white;
+}
+
+.export-btn:hover{
+background-color:#218838;
+}
+
+/* Reset Inventory Button */
+.reset-btn{
+background-color:#dc3545;
+color:white;
+}
+
+.reset-btn:hover{
+background-color:#c82333;
+}
+
+/* Logout Button */
+.logout-btn{
+background-color:#dc3545;
+color:white;
+}
+
+.logout-btn:hover{
+background-color:#c82333;
+}

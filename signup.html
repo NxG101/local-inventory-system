@@ -17,16 +17,16 @@
 <div class="login-title">Create Admin Account</div>
 <div class="login-sub">Owner permission required</div>
 
-<div class="error-msg" id="error"></div>
+<div class="error-msg" id="error" style="display:none;"></div>
 
 <form class="login-form" id="signup-form">
 
 <div class="form-group">
-<input type="text" id="newUser" placeholder="Username" required>
+<input type="email" id="newEmail" placeholder="Email (e.g. sample@stock.com)"  required>
 </div>
 
 <div class="form-group">
-<input type="password" id="newPass" placeholder="Password" required>
+<input type="password" id="newPassword" placeholder="Password" required>
 </div>
 
 <div class="form-group">
@@ -45,38 +45,13 @@ Already have an account? <a href="login.html">Login</a>
 
 </div>
 
-<script>
+<script type="module">
+import { createAdmin } from "./script.js";
 
-const OWNER_KEY = "OWNER123";
-
-document.getElementById("signup-form").addEventListener("submit",function(e){
-
-e.preventDefault();
-
-let user = document.getElementById("newUser").value;
-let pass = document.getElementById("newPass").value;
-let key  = document.getElementById("adminKey").value;
-
-let error = document.getElementById("error");
-
-if(key !== OWNER_KEY){
-
-error.style.display="block";
-error.innerText="Invalid Admin Key. Please ask the owner.";
-
-return;
-
-}
-
-localStorage.setItem("adminUser",user);
-localStorage.setItem("adminPass",pass);
-
-alert("Admin account created successfully!");
-
-window.location.href="login.html";
-
+document.getElementById("signup-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    createAdmin();
 });
-
 </script>
 
 </body>

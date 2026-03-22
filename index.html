@@ -71,6 +71,7 @@ View current available clothing items
 
 <thead>
 <tr>
+<th>Image</th>
 <th>Product</th>
 <th>SKU</th>
 <th>Category</th>
@@ -90,40 +91,33 @@ View current available clothing items
 
 </main>
 
-<script>
-
-let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
+<script type="module">
+import { db } from "./script.js";
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 const table = document.getElementById("visitor-inventory");
 
-function render(){
-
-table.innerHTML="";
-
-inventory.forEach(item => {
-
-if(item.stock > 0){
-
-table.innerHTML += `
-<tr>
-<td>${item.name}</td>
-<td>${item.sku}</td>
-<td>${item.category}</td>
-<td>${item.size}</td>
-<td>${item.color}</td>
-<td>₱${item.price}</td>
-<td>${item.stock}</td>
-</tr>
-`;
-
+async function loadInventory(){
+    table.innerHTML = "";
+    const snapshot = await getDocs(collection(db,"inventory"));
+    snapshot.forEach(doc=>{
+        const item = doc.data();
+        if(item.stock > 0){
+            table.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.sku || doc.id}</td>
+                <td>${item.category || "-"}</td>
+                <td>${item.size || "-"}</td>
+                <td>${item.color || "-"}</td>
+                <td>₱${item.price}</td>
+                <td>${item.stock}</td>
+            </tr>
+            `;
+        }
+    });
 }
-
-});
-
-}
-
-render();
-
+window.onload = loadInventory;
 </script>
 
 </body>
