@@ -546,52 +546,7 @@ function updateAutoSKU() {
 }
 
 // ================== SWITCH ACCOUNT ==================
-function loadSavedAccounts() {
-  const list = document.getElementById("account-list");
-  if (!list) return;
 
-  const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
-
-  list.innerHTML = "";
-
-  if (accounts.length === 0) {
-    list.innerHTML = "<p style='font-size:0.85rem;color:gray;'>No saved accounts</p>";
-    return;
-  }
-
-  accounts.forEach(email => {
-    list.innerHTML += `
-      <div class="account-item" onclick="selectAccount('${email}')">
-        ${email}
-      </div>
-    `;
-  });
-}
-
-function selectAccount(email) {
-  selectedAccount = email;
-
-  document.querySelectorAll(".account-item").forEach(el => {
-    el.classList.remove("selected");
-  });
-
-  event.target.classList.add("selected");
-}
-
-async function switchAccount() {
-  const password = document.getElementById("switch-password").value;
-
-  if (!selectedAccount) return alert("Select an account");
-  if (!password) return alert("Enter password");
-
-  try {
-    await signInWithEmailAndPassword(auth, selectedAccount, password);
-    alert("Switched account!");
-    window.location.reload();
-  } catch (err) {
-    alert("Wrong password");
-  }
-}
 
 // ================== DYNAMIC FILTER DROPDOWN ==================
 async function populateFilterDropdown() {
@@ -630,10 +585,6 @@ window.changePassword = changePassword;
 window.logout = logout;
 window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
-window.openAccountSwitcher = openAccountSwitcher;
-window.closeAccountSwitcher = closeAccountSwitcher;
-window.selectAccount = selectAccount;
-window.switchAccount = switchAccount;
 
 window.addEventListener("DOMContentLoaded", () => {
   
