@@ -36,11 +36,18 @@ let allInventory = [];
 
 // ================== ADMIN KEY ==================
 async function fetchAdminKey() {
-  const docRef = doc(db, "config", "admin");
-  const snap = await getDoc(docRef);
+  try {
+    const docRef = doc(db, "settings", "adminConfig");   // ← changed path
+    const snap = await getDoc(docRef);
 
-  if (snap.exists()) {
-    ADMIN_KEY = snap.data().key;
+    if (snap.exists()) {
+      ADMIN_KEY = snap.data().adminKey;                 // ← changed field name
+      console.log("✅ Admin key loaded:", ADMIN_KEY);   // helpful debug
+    } else {
+      console.error("Admin key document not found!");
+    }
+  } catch (err) {
+    console.error("Error fetching admin key:", err.message);
   }
 }
 
@@ -366,25 +373,34 @@ async function createAdmin() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
   
-  await fetchAdminKey();
-  
-  const email = document.getElementById("newEmail").value.trim();
-  const password = document.getElementById("newPassword").value;
-  const key = document.getElementById("adminKey").value;
-
-  if (key !== ADMIN_KEY) {
-    errorEl.textContent = "Invalid Admin Key";
-    errorEl.style.display = "block";
-    return;
-  }
   try {
+    await fetchAdminKey();                    // ← moved inside try
+
+    const email = document.getElementById("newEmail").value.trim();
+    const password = document.getElementById("newPassword").value;
+    const key = document.getElementById("adminKey").value;
+
+    if (key !== ADMIN_KEY) {
+      errorEl.textContent = "Invalid Admin Key";
+      errorEl.style.display = "block";
+      return;
+    }
+
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await setDoc(doc(db, "users", cred.user.uid), { email, role: "admin" });
-    alert("Admin created! Logging in...");
-    window.location.href = "login.html";
+    await setDoc(doc(db, "users", cred.user.uid), { 
+      email, 
+      role: "admin",
+      username: email.split("@")[0] // optional nice default
+    });
+
+    alert("✅ Admin account created! Logging in...");
+    window.location.href = "login.html";   // or directly to inventory.html if you want
+
   } catch (err) {
-    console.error(err); 
-    errorEl.textContent = err.message;
+    console.error(err);
+    errorEl.textContent = err.message.includes("permission") 
+      ? "Firestore permission error - check your rules!" 
+      : err.message;
     errorEl.style.display = "block";
   }
 }
