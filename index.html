@@ -71,7 +71,6 @@ View current available clothing items
 
 <thead>
 <tr>
-<th>Image</th>
 <th>Product</th>
 <th>SKU</th>
 <th>Category</th>
@@ -103,10 +102,8 @@ async function loadInventory(){
     snapshot.forEach(doc=>{
         const item = doc.data();
         if(item.stock > 0){
-            const imgSrc = item.imageUrl || "https://via.placeholder.com/40x40/eee/666?text=No+Img";
             table.innerHTML += `
             <tr>
-                <td><img src="${imgSrc}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>
                 <td>${item.name}</td>
                 <td>${item.sku || doc.id}</td>
                 <td>${item.category || "-"}</td>

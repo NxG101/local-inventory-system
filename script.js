@@ -29,6 +29,7 @@ let ADMIN_KEY = "";
 let editingId = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
+let selectedAccount = null;
 
 // ================== ADMIN KEY ==================
 async function fetchAdminKey() {
@@ -425,11 +426,23 @@ async function createAdmin() {
 async function login() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
+
   try {
-    await signInWithEmailAndPassword(
-      auth, document.getElementById("loginEmail").value.trim(), 
-      document.getElementById("password").value);
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("password").value;
+
+    await signInWithEmailAndPassword(auth, email, password);
+
+    // ✅ SAVE ACCOUNT LOCALLY
+    let accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
+
+    if (!accounts.includes(email)) {
+      accounts.push(email);
+      localStorage.setItem("accounts", JSON.stringify(accounts));
+    }
+
     window.location.href = "inventory.html";
+
   } catch (err) {
     errorEl.textContent = "Invalid credentials";
     errorEl.style.display = "block";
@@ -544,6 +557,54 @@ function updateAutoSKU() {
   }
 }
 
+// ================== SWITCH ACCOUNT ==================
+function loadSavedAccounts() {
+  const list = document.getElementById("account-list");
+  if (!list) return;
+
+  const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
+
+  list.innerHTML = "";
+
+  if (accounts.length === 0) {
+    list.innerHTML = "<p style='font-size:0.85rem;color:gray;'>No saved accounts</p>";
+    return;
+  }
+
+  accounts.forEach(email => {
+    list.innerHTML += `
+      <div class="account-item" onclick="selectAccount('${email}')">
+        ${email}
+      </div>
+    `;
+  });
+}
+
+function selectAccount(email) {
+  selectedAccount = email;
+
+  document.querySelectorAll(".account-item").forEach(el => {
+    el.classList.remove("selected");
+  });
+
+  event.target.classList.add("selected");
+}
+
+async function switchAccount() {
+  const password = document.getElementById("switch-password").value;
+
+  if (!selectedAccount) return alert("Select an account");
+  if (!password) return alert("Enter password");
+
+  try {
+    await signInWithEmailAndPassword(auth, selectedAccount, password);
+    alert("Switched account!");
+    window.location.reload();
+  } catch (err) {
+    alert("Wrong password");
+  }
+}
+
 // ================== DYNAMIC FILTER DROPDOWN ==================
 async function populateFilterDropdown() {
   const select = document.getElementById("filter-category");
@@ -581,6 +642,10 @@ window.changePassword = changePassword;
 window.logout = logout;
 window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
+window.openAccountSwitcher = openAccountSwitcher;
+window.closeAccountSwitcher = closeAccountSwitcher;
+window.selectAccount = selectAccount;
+window.switchAccount = switchAccount;
 
 window.addEventListener("DOMContentLoaded", () => {
   
@@ -604,6 +669,10 @@ window.addEventListener("DOMContentLoaded", () => {
         populateFilterDropdown();
       }
     });
+  }
+
+  if (document.getElementById("account-list")) {
+    loadSavedAccounts();
   }
 
   // Filters
