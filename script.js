@@ -443,10 +443,15 @@ async function changePassword() {
   alert("Password updated!");
 }
 
-function logout() {
-  if (confirm("Logout?")) {
-    signOut(auth);
-    window.location.href = "login.html";
+async function logout() {
+  if (!confirm("Logout?")) return;
+
+  try {
+    await signOut(auth);               // wait for Firebase to finish logging out
+    window.location.href = "index.html";   // ← changed to index.html
+  } catch (err) {
+    console.error("Logout error:", err);
+    window.location.href = "index.html";   // still go to index even if there's a tiny error
   }
 }
 
