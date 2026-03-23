@@ -256,14 +256,18 @@ async function deleteItem(id) {
   loadInventory();
 }
 
-async function openModal() {
+function openModal() {
   document.getElementById("modal").style.display = "flex";
   
-  // Wait for categories to load first, then auto-generate SKU
-  await populateCategoryDropdown();
-  updateAutoSKU();
+  // Load categories + auto SKU (safe, no async issues with onclick)
+  populateCategoryDropdown().then(() => {
+    updateAutoSKU();
+  }).catch(err => {
+    console.error("Category load error:", err);
+    // Still open modal even if categories fail
+  });
   
-  // Clear image previews
+  // Clear previews
   const imagePrev = document.getElementById("image-preview");
   if (imagePrev) imagePrev.style.display = "none";
   
