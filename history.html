@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order History | STOCK</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<aside>
+
+<div class="logo">STOCK.</div>
+
+<nav>
+<a href="inventory.html">Inventory</a>
+<a href="categories.html">Categories</a>
+<a href="order.html">Order Item</a>
+<a href="history.html" class="active">Order History</a>
+<a href="settings.html">Settings</a>
+</nav>
+
+<div class="account-panel">
+<img src="./images/default-avatar.png" class="profile-img">
+<div class="profile-info">
+<strong id="username"></strong>
+<span>Inventory Manager</span>
+</div>
+</div>
+
+</aside>
+
+<main>
+
+<header>
+<h1>Order History</h1>
+<p style="color:var(--text-muted)">All stock withdrawals</p>
+</header>
+
+<div class="table-container">
+
+<table>
+
+<thead>
+<tr>
+<th>Product</th>
+<th>SKU</th>
+<th>Quantity</th>
+<th>Ordered By</th>
+<th>Date</th>
+</tr>
+</thead>
+
+<tbody id="order-history"></tbody>
+
+</table>
+
+</div>
+
+</main>
+
+<script type="module" src="script.js"></script>
+
+</body>
+</html>
