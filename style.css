@@ -671,3 +671,21 @@ color:white;
 .logout-btn:hover{
 background-color:#c82333;
 }
+
+.account-item{
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  margin-bottom:8px;
+  cursor:pointer;
+  font-size:0.85rem;
+}
+
+.account-item:hover{
+  background:var(--bg-body);
+}
+
+.account-item.selected{
+  background: var(--accent);
+  color: white;
+}
