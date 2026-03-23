@@ -32,7 +32,6 @@ window.db = db;
 let ADMIN_KEY = "";
 let editingId = null;
 let currentEditingImage = null;
-let currentEditingQR = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
 
@@ -103,7 +102,6 @@ function renderInventoryTable(data) {
   data.forEach(item => {
     const id = item.id;
     const imgSrc = item.imageUrl || "https://via.placeholder.com/40x40/eee/666?text=No+Img";
-    const qrSrc = item.qrCodeUrl || null;
 
     table.innerHTML += `
       <tr>
@@ -116,11 +114,6 @@ function renderInventoryTable(data) {
         <td>₱${item.price}</td>
         <td>${item.stock}</td>
         <td>${item.stock <= 5 ? `<span class="badge badge-low">Low</span>` : `<span class="badge badge-ok">OK</span>`}</td>
-        <td>
-          ${qrSrc 
-            ? `<img src="${qrSrc}" style="width:60px;cursor:pointer;border-radius:4px;" onclick="viewQR('${qrSrc}')">` 
-            : `<span style="color:var(--text-muted);font-size:0.8rem;">—</span>`}
-        </td>
         <td>
           <button onclick="editItem('${id}')" class="btn-outline">Edit</button>
           <button onclick="deleteItem('${id}')" class="btn-outline" style="margin-left:5px">Delete</button>
@@ -168,20 +161,15 @@ async function addInventoryItem(e) {
   }
 
   const productFile = document.getElementById("p-image").files[0];
-  const qrFile = document.getElementById("p-qr-image").files[0];
-
   let imageUrl = currentEditingImage || null;
-  let qrCodeUrl = currentEditingQR || null;   // ← new
 
   if (productFile) imageUrl = await uploadImage(productFile);
-  if (qrFile) qrCodeUrl = await uploadQRImage(qrFile);
 
   const itemData = {
     name, sku, category, size, color, price, stock,
     status: stock <= 5 ? "Low" : "OK",
     dateAdded: new Date().toISOString(),
     imageUrl,
-    qrCodeUrl,          // ← NEW
     userId: auth.currentUser?.uid || null
   };
 
@@ -232,17 +220,6 @@ async function editItem(id) {
         container.style.display = "block";
       }
     }
-
-    currentEditingQR = item.qrCodeUrl || null;
-    if (item.qrCodeUrl) {
-      const qrPreview = document.getElementById("preview-qr");
-      const qrContainer = document.getElementById("qr-preview");
-      if (qrPreview && qrContainer) {
-        qrPreview.src = item.qrCodeUrl;
-        qrContainer.style.display = "block";
-      }
-    }
-
     editingId = id;
     document.querySelector("#modal h2").textContent = "Edit Item";
     openModal();
@@ -525,13 +502,6 @@ async function uploadImage(file) {
   return await getDownloadURL(storageRef);
 }
 
-async function uploadQRImage(file) {
-  if (!file) return null;
-  const storageRef = ref(storage, `qrCodes/${Date.now()}-${file.name}`); // separate folder
-  await uploadBytes(storageRef, file);
-  return await getDownloadURL(storageRef);
-}
-
 // ================== DYNAMIC CATEGORIES DROPDOWN ==================
 async function populateCategoryDropdown() {
   const select = document.getElementById("p-cat");
@@ -675,33 +645,6 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-
-  const qrInput = document.getElementById("p-qr-image");
-  if (qrInput) {
-    qrInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const preview = document.getElementById("preview-qr");
-          if (preview) preview.src = ev.target.result;
-          const container = document.getElementById("qr-preview");
-          if (container) container.style.display = "block";
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
-
-  function viewQR(url) {
-  if (!url) return alert("No QR code for this item");
-  const win = window.open("", "_blank");
-  win.document.write(`
-    <style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;}</style>
-    <img src="${url}" style="max-width:90%;max-height:90vh;border-radius:8px;">
-  `);
-}
-window.viewQR = viewQR;
 
   const addForm = document.getElementById("add-form");
   if (addForm) {
