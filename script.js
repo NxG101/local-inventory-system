@@ -146,6 +146,10 @@ function applyFilters() {
 
 // Add / Edit handler
 async function addInventoryItem(e) {
+  if (!auth.currentUser) {
+    alert("User not authenticated yet. Please wait or refresh.");
+    return;
+  }
   e.preventDefault();
   const name = document.getElementById("p-name").value.trim();
   const sku = document.getElementById("p-sku").value.trim();
