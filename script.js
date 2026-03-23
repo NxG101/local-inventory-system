@@ -29,7 +29,6 @@ let ADMIN_KEY = "";
 let editingId = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
-let selectedAccount = null;
 
 // ================== ADMIN KEY ==================
 async function fetchAdminKey() {
@@ -423,19 +422,19 @@ async function createAdmin() {
   }
 }
 
-async function login() { 
-  const errorEl = document.getElementById("error"); 
-  errorEl.style.display = "none"; 
-  try { 
-    await signInWithEmailAndPassword( 
-      auth, 
-    document.getElementById("loginEmail").value.trim(), 
-      document.getElementById("password").value); 
-      window.location.href = "inventory.html"; } catch (err) { 
-        errorEl.textContent = "Invalid credentials"; 
-        errorEl.style.display = "block"; 
-      } 
-    }
+async function login() {
+  const errorEl = document.getElementById("error");
+  errorEl.style.display = "none";
+  try {
+    await signInWithEmailAndPassword(
+      auth, document.getElementById("loginEmail").value.trim(), 
+      document.getElementById("password").value);
+    window.location.href = "inventory.html";
+  } catch (err) {
+    errorEl.textContent = "Invalid credentials";
+    errorEl.style.display = "block";
+  }
+}
 
 async function changePassword() {
   const key = prompt("Enter Admin Key:");
@@ -545,9 +544,6 @@ function updateAutoSKU() {
   }
 }
 
-// ================== SWITCH ACCOUNT ==================
-
-
 // ================== DYNAMIC FILTER DROPDOWN ==================
 async function populateFilterDropdown() {
   const select = document.getElementById("filter-category");
@@ -608,10 +604,6 @@ window.addEventListener("DOMContentLoaded", () => {
         populateFilterDropdown();
       }
     });
-  }
-
-  if (document.getElementById("account-list")) {
-    loadSavedAccounts();
   }
 
   // Filters
