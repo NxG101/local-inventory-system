@@ -18,7 +18,8 @@ const firebaseConfig = {
   projectId: "stock-inventory-78e6f",
   storageBucket: "stock-inventory-78e6f.firebasestorage.app",
   messagingSenderId: "437284393762",
-  appId: "1:437284393762:web:d7441ef89cf88e35f94b7b"
+  appId: "1:437284393762:web:d7441ef89cf88e35f94b7b",
+  measurementId: "G-T7LDNHTFW3"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -34,25 +35,30 @@ let currentEditingImage = null;
 let allInventory = [];
 
 // ================== ADMIN KEY ==================
-async function fetchAdminKey() {
-  try {
+async function createAdmin() {
 
-    const keyDocRef = doc(db, "settings", "adminConfig");
-    const keyDoc = await getDoc(keyDocRef);
-
-    if (keyDoc.exists()) {
-      ADMIN_KEY = keyDoc.data().adminKey;
-      console.log("✅ Admin key fetched from Firestore:", ADMIN_KEY);
-    } else {
-      console.error("❌ adminConfig document not found in Firestore");
-    }
-
-  } catch (error) {
-    console.error("❌ Error fetching admin key:", error);
+  if (!ADMIN_KEY) {
+    await fetchAdminKey();
   }
-}
 
-fetchAdminKey();
+  const email = document.getElementById("newEmail").value.trim();
+  const password = document.getElementById("newPassword").value;
+  const key = document.getElementById("adminKey").value;
+
+  if (key !== ADMIN_KEY) {
+    alert("Invalid Admin Key");
+    return;
+  }
+
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+  await setDoc(doc(db, "users", cred.user.uid), {
+    email: email,
+    role: "admin"
+  });
+
+  window.location.href = "login.html";
+}
 
 // ================== AUTH GUARD & PROFILE SYNC ==================
 onAuthStateChanged(auth, (user) => {
@@ -439,7 +445,8 @@ async function loadProfile() {
     const data = userSnap.data();
 
     if (data.username) {
-      document.getElementById("profile-username").value = data.username;
+      const usernameInput = document.getElementById("profile-username");
+      if (usernameInput) usernameInput.value = data.username;
       document.querySelectorAll("#username,#sidebar-username")
         .forEach(el => el.textContent = data.username);
     }
