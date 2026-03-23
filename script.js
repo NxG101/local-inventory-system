@@ -210,18 +210,18 @@ async function editItem(id) {
     currentEditingImage = item.imageUrl || null;
 
     document.getElementById("p-name").value = item.name || "";
-    
-    // Allow editing SKU only when editing an existing item
-    const skuInput = document.getElementById("p-sku");
-    skuInput.readOnly = false;
-    skuInput.style.background = "var(--bg-card)";
-    skuInput.style.color = "var(--text-main)";
-    
+    document.getElementById("p-sku").value = item.sku || "";
     document.getElementById("p-cat").value = item.category || "Top";
     document.getElementById("p-size").value = item.size || "S";
     document.getElementById("p-color").value = item.color || "";
     document.getElementById("p-price").value = item.price || 0;
     document.getElementById("p-stock").value = item.stock || 0;
+
+    // Allow manual SKU editing only when editing an existing item
+    const skuInput = document.getElementById("p-sku");
+    skuInput.readOnly = false;
+    skuInput.style.background = "var(--bg-card)";
+    skuInput.style.color = "var(--text-main)";
 
     if (item.imageUrl) {
       const preview = document.getElementById("preview-img");
@@ -256,17 +256,19 @@ async function deleteItem(id) {
   loadInventory();
 }
 
-function openModal() {
+async function openModal() {
   document.getElementById("modal").style.display = "flex";
-  populateCategoryDropdown();
   
-  // Auto-generate SKU for NEW items
-  setTimeout(() => {
-    updateAutoSKU();
-  }, 200);
+  // Wait for categories to load first, then auto-generate SKU
+  await populateCategoryDropdown();
+  updateAutoSKU();
   
-  document.getElementById("image-preview").style.display = "none";
-  document.getElementById("qr-preview").style.display = "none";
+  // Clear image previews
+  const imagePrev = document.getElementById("image-preview");
+  if (imagePrev) imagePrev.style.display = "none";
+  
+  const qrPrev = document.getElementById("qr-preview");
+  if (qrPrev) qrPrev.style.display = "none";
 }
 
 function closeModal() {
@@ -546,7 +548,8 @@ function generateSKU(category) {
   
   const prefix = category.toUpperCase().slice(0, 3) + "-";   // TOP-, BOT-, OUT-, ACC-
   
-  const existingNumbers = allInventory
+  // Safe even if allInventory is still loading
+  const existingNumbers = (allInventory || [])
     .filter(item => item.sku && item.sku.startsWith(prefix))
     .map(item => {
       const parts = item.sku.split("-");
@@ -561,10 +564,9 @@ function generateSKU(category) {
 }
 
 function updateAutoSKU() {
-  if (editingId !== null) return;   // don't auto-change when editing
+  if (editingId !== null) return;   // don't auto-change when editing existing item
   
   const catSelect = document.getElementById("p-cat");
-  if (catSelect) catSelect.addEventListener("change", updateAutoSKU);
   const skuInput = document.getElementById("p-sku");
   if (!catSelect || !skuInput) return;
   
