@@ -33,6 +33,7 @@ let ADMIN_KEY = "";
 let editingId = null;
 let currentEditingImage = null;
 let allInventory = [];
+let finalSKU = sku;
 let inventoryUnsubscribe = null;
 
 // ================== ADMIN KEY ==================
@@ -155,7 +156,11 @@ async function addInventoryItem(e) {
   const price = parseFloat(document.getElementById("p-price").value);
   const stock = parseInt(document.getElementById("p-stock").value);
 
-  if (!name || !sku || isNaN(price) || isNaN(stock)) {
+  if (!finalSKU) {
+    finalSKU = generateSKU(category);
+  }
+
+  if (!name || isNaN(price) || isNaN(stock)) {
     alert("Fill all required fields");
     return;
   }
@@ -166,7 +171,7 @@ async function addInventoryItem(e) {
   if (productFile) imageUrl = await uploadImage(productFile);
 
   const itemData = {
-    name, sku, category, size, color, price, stock,
+    name, sku: finalSKU, category, size, color, price, stock,
     status: stock <= 5 ? "Low" : "OK",
     dateAdded: new Date().toISOString(),
     imageUrl,
