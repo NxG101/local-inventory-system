@@ -22,19 +22,21 @@
 <nav>
 <a href="inventory.html">Inventory</a>
 <a href="categories.html">Categories</a>
-<a href="settings.html" class="active">Settings</a>
+<a href="order.html" class="active">Order Item</a>
+<a href="history.html">Order History</a>
+<a href="settings.html">Settings</a>
 </nav>
 
-<div class="account-panel">
+        <!-- Account Display -->
+        <div class="account-panel">
+                <img src="./images/default-avatar.png" class="profile-img">
+                <div class="profile-info">
+                    <strong id="username"></strong>
+                    <span>Inventory Manager</span>
+                </div>
 
-<img src="./images/default-avatar.png" class="profile-img">
-
-<div class="profile-info">
-<strong id="sidebar-username">Admin</strong>
-<span>Inventory Manager</span>
-</div>
-
-</div>
+            </div>
+    </aside>
 
 </aside>
 
@@ -127,22 +129,6 @@ Switch between light and dark theme
 <button class="btn" onclick="changePassword()">Update Password</button>
 
 <button class="btn-red" style="margin-top:10px" onclick="logout()">Logout</button>
-
-</div>
-
-<!-- Switch ACCOUNT -->
-<div class="table-container" style="padding:1.5rem;margin-top:1rem">
-
-  <h3 style="margin-bottom:1rem">Switch Account</h4>
-
-  <div id="account-list"></div>
-
-  <div class="form-group" style="margin-top:1rem">
-    <label>Password</label>
-    <input type="password" id="switch-password" placeholder="Enter password">
-  </div>
-
-  <button class="btn" onclick="switchAccount()">Switch Account</button>
 
 </div>
 

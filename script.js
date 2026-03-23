@@ -7,6 +7,8 @@ import {
   getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, 
   getDoc, setDoc, query, where, onSnapshot  
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { serverTimestamp } from 
+"https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 
 const firebaseConfig = {
@@ -29,7 +31,6 @@ let ADMIN_KEY = "";
 let editingId = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
-let selectedAccount = null;
 
 // ================== ADMIN KEY ==================
 async function fetchAdminKey() {
@@ -426,23 +427,11 @@ async function createAdmin() {
 async function login() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
-
   try {
-    const email = document.getElementById("loginEmail").value.trim();
-    const password = document.getElementById("password").value;
-
-    await signInWithEmailAndPassword(auth, email, password);
-
-    // ✅ SAVE ACCOUNT LOCALLY
-    let accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
-
-    if (!accounts.includes(email)) {
-      accounts.push(email);
-      localStorage.setItem("accounts", JSON.stringify(accounts));
-    }
-
+    await signInWithEmailAndPassword(
+      auth, document.getElementById("loginEmail").value.trim(), 
+      document.getElementById("password").value);
     window.location.href = "inventory.html";
-
   } catch (err) {
     errorEl.textContent = "Invalid credentials";
     errorEl.style.display = "block";
@@ -557,54 +546,6 @@ function updateAutoSKU() {
   }
 }
 
-// ================== SWITCH ACCOUNT ==================
-function loadSavedAccounts() {
-  const list = document.getElementById("account-list");
-  if (!list) return;
-
-  const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
-
-  list.innerHTML = "";
-
-  if (accounts.length === 0) {
-    list.innerHTML = "<p style='font-size:0.85rem;color:gray;'>No saved accounts</p>";
-    return;
-  }
-
-  accounts.forEach(email => {
-    list.innerHTML += `
-      <div class="account-item" onclick="selectAccount('${email}')">
-        ${email}
-      </div>
-    `;
-  });
-}
-
-function selectAccount(email) {
-  selectedAccount = email;
-
-  document.querySelectorAll(".account-item").forEach(el => {
-    el.classList.remove("selected");
-  });
-
-  event.target.classList.add("selected");
-}
-
-async function switchAccount() {
-  const password = document.getElementById("switch-password").value;
-
-  if (!selectedAccount) return alert("Select an account");
-  if (!password) return alert("Enter password");
-
-  try {
-    await signInWithEmailAndPassword(auth, selectedAccount, password);
-    alert("Switched account!");
-    window.location.reload();
-  } catch (err) {
-    alert("Wrong password");
-  }
-}
-
 // ================== DYNAMIC FILTER DROPDOWN ==================
 async function populateFilterDropdown() {
   const select = document.getElementById("filter-category");
@@ -619,6 +560,146 @@ async function populateFilterDropdown() {
     opt.textContent = cat.name;
     select.appendChild(opt);
   });
+}
+
+// ================== Load Item Orders ==================
+async function loadOrderItems() {
+
+  const select = document.getElementById("order-item");
+  if(!select) return;
+
+  const snapshot = await getDocs(collection(db,"inventory"));
+
+  select.innerHTML = "";
+
+  snapshot.forEach(docItem => {
+
+    const item = docItem.data();
+
+    if(item.stock > 0){
+
+      select.innerHTML += `
+      <option value="${docItem.id}">
+        ${item.name} (Stock: ${item.stock})
+      </option>`;
+    }
+
+  });
+
+}
+
+async function placeOrder(e){
+
+  e.preventDefault();
+
+  const itemId = document.getElementById("order-item").value;
+  const qty = parseInt(document.getElementById("order-qty").value);
+
+  const itemRef = doc(db,"inventory",itemId);
+  const itemSnap = await getDoc(itemRef);
+
+  if(!itemSnap.exists()) return alert("Item not found");
+
+  const item = itemSnap.data();
+
+  if(qty > item.stock) return alert("Not enough stock");
+
+  const newStock = item.stock - qty;
+
+  await updateDoc(itemRef,{
+    stock:newStock
+  });
+
+  await addDoc(collection(db,"orders"),{
+
+    itemName:item.name,
+    sku:item.sku,
+    quantity:qty,
+    userId:auth.currentUser.uid,
+    userEmail:auth.currentUser.email,
+    date:new Date().toISOString()
+
+  });
+
+  alert("✅ Order completed");
+
+  document.getElementById("order-form").reset();
+
+  loadOrderItems();
+
+}
+
+async function completeOrder(e){
+
+  e.preventDefault();
+
+  const itemId = document.getElementById("order-item").value;
+  const qty = parseInt(document.getElementById("order-qty").value);
+
+  const user = auth.currentUser;
+
+  if(!user) return alert("User not logged in");
+
+  const itemRef = doc(db,"inventory",itemId);
+  const itemSnap = await getDoc(itemRef);
+
+  if(!itemSnap.exists()) return alert("Item not found");
+
+  const item = itemSnap.data();
+
+  if(qty > item.stock){
+    alert("Not enough stock");
+    return;
+  }
+
+  const newStock = item.stock - qty;
+
+  // Update stock
+  await updateDoc(itemRef,{
+    stock:newStock
+  });
+
+  // Record order
+  await addDoc(collection(db,"orders"),{
+
+    itemId:itemId,
+    itemName:item.name,
+    quantity:qty,
+    userId:user.uid,
+    username:user.email,
+    date:serverTimestamp()
+
+  });
+
+  alert("Order completed!");
+
+}
+
+async function loadOrderHistory(){
+
+  const table = document.getElementById("order-history");
+
+  if(!table) return;
+
+  const snapshot = await getDocs(collection(db,"orders"));
+
+  table.innerHTML = "";
+
+  snapshot.forEach(docItem=>{
+
+    const order = docItem.data();
+
+    table.innerHTML += `
+    <tr>
+      <td>${order.itemName}</td>
+      <td>${order.quantity}</td>
+      <td>${order.username}</td>
+      <td>${order.date?.toDate().toLocaleString() || ""}</td>
+    </tr>
+    `;
+
+  });
+
 }
 
 // ================== GLOBAL EXPOSE + INIT ==================
@@ -642,10 +723,6 @@ window.changePassword = changePassword;
 window.logout = logout;
 window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
-window.openAccountSwitcher = openAccountSwitcher;
-window.closeAccountSwitcher = closeAccountSwitcher;
-window.selectAccount = selectAccount;
-window.switchAccount = switchAccount;
 
 window.addEventListener("DOMContentLoaded", () => {
   
@@ -669,10 +746,6 @@ window.addEventListener("DOMContentLoaded", () => {
         populateFilterDropdown();
       }
     });
-  }
-
-  if (document.getElementById("account-list")) {
-    loadSavedAccounts();
   }
 
   // Filters
