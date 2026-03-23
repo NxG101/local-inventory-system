@@ -30,48 +30,18 @@ const storage = getStorage(app);
 window.db = db;
 
 let ADMIN_KEY = "";
+fetchAdminKey();
 let editingId = null;
 let currentEditingImage = null;
 let allInventory = [];
 
 // ================== ADMIN KEY ==================
-async function createAdmin() {
+async function fetchAdminKey() {
+  const docRef = doc(db, "config", "admin");
+  const snap = await getDoc(docRef);
 
-  const errorEl = document.getElementById("error");
-  errorEl.style.display = "none";
-
-  if (!ADMIN_KEY) {
-    await fetchAdminKey();
-  }
-
-  const email = document.getElementById("newEmail").value.trim();
-  const password = document.getElementById("newPassword").value;
-  const key = document.getElementById("adminKey").value;
-
-  if (key !== ADMIN_KEY) {
-    errorEl.textContent = "Invalid Admin Key";
-    errorEl.style.display = "block";
-    return;
-  }
-
-  try {
-
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-
-    await setDoc(doc(db, "users", cred.user.uid), {
-      email: email,
-      role: "admin"
-    });
-
-    alert("Account created successfully!");
-    window.location.href = "login.html";
-
-  } catch (err) {
-
-    console.error(err);
-    errorEl.textContent = err.message;
-    errorEl.style.display = "block";
-
+  if (snap.exists()) {
+    ADMIN_KEY = snap.data().key;
   }
 }
 
