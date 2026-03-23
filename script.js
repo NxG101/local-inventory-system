@@ -156,29 +156,34 @@ async function addInventoryItem(e) {
     return;
   }
 
-  const imageFile = document.getElementById("p-image").files[0];
-  let imageUrl = currentEditingImage;
-  if (imageFile) {
-    imageUrl = await uploadImage(imageFile);
-  }
+  const productFile = document.getElementById("p-image").files[0];
+  const qrFile = document.getElementById("p-qr-image").files[0];
+
+  let imageUrl = currentEditingImage || null;
+  let qrCodeUrl = currentEditingQR || null;   // ← new
+
+  if (productFile) imageUrl = await uploadImage(productFile);
+  if (qrFile) qrCodeUrl = await uploadQRImage(qrFile);
 
   const itemData = {
     name, sku, category, size, color, price, stock,
     status: stock <= 5 ? "Low" : "OK",
     dateAdded: new Date().toISOString(),
     imageUrl,
+    qrCodeUrl,          // ← NEW
     userId: auth.currentUser?.uid || null
   };
 
   try {
     if (editingId) {
       await updateDoc(doc(db, "inventory", editingId), itemData);
-      alert("✅ Item updated with new image!");
+      alert("✅ Item updated (with QR code)!");
       editingId = null;
+      currentEditingQR = null;
       document.querySelector("#modal h2").textContent = "Add New Item";
     } else {
       await addDoc(collection(db, "inventory"), itemData);
-      alert("✅ Item added with image!");
+      alert("✅ Item added with QR code image!");
     }
     closeModal();
     loadInventory();
@@ -208,6 +213,16 @@ async function editItem(id) {
       if (preview && container) {
         preview.src = item.imageUrl;
         container.style.display = "block";
+      }
+    }
+
+    currentEditingQR = item.qrCodeUrl || null;
+    if (item.qrCodeUrl) {
+      const qrPreview = document.getElementById("preview-qr");
+      const qrContainer = document.getElementById("qr-preview");
+      if (qrPreview && qrContainer) {
+        qrPreview.src = item.qrCodeUrl;
+        qrContainer.style.display = "block";
       }
     }
 
@@ -428,10 +443,15 @@ async function changePassword() {
   alert("Password updated!");
 }
 
-function logout() {
-  if (confirm("Logout?")) {
-    signOut(auth);
-    window.location.href = "login.html";
+async function logout() {
+  if (!confirm("Logout?")) return;
+
+  try {
+    await signOut(auth);               // wait for Firebase to finish logging out
+    window.location.href = "index.html";   // ← changed to index.html
+  } catch (err) {
+    console.error("Logout error:", err);
+    window.location.href = "index.html";   // still go to index even if there's a tiny error
   }
 }
 
@@ -464,6 +484,13 @@ async function loadProfile() {
 async function uploadImage(file) {
   if (!file) return null;
   const storageRef = ref(storage, `images/${Date.now()}-${file.name}`);
+  await uploadBytes(storageRef, file);
+  return await getDownloadURL(storageRef);
+}
+
+async function uploadQRImage(file) {
+  if (!file) return null;
+  const storageRef = ref(storage, `qrCodes/${Date.now()}-${file.name}`); // separate folder
   await uploadBytes(storageRef, file);
   return await getDownloadURL(storageRef);
 }
@@ -546,6 +573,28 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  const qrInput = document.getElementById("p-qr-image");
+  if (qrInput) {
+    qrInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const preview = document.getElementById("preview-qr");
+          if (preview) preview.src = ev.target.result;
+          const container = document.getElementById("qr-preview");
+          if (container) container.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+const addForm = document.getElementById("add-form");
+if (addForm) {
+    addForm.addEventListener("submit", addInventoryItem);
+}
 
   // Auto-load tables
   if (document.getElementById("inventory-table")) loadInventory();
