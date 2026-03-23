@@ -620,17 +620,26 @@ window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
 
 window.addEventListener("DOMContentLoaded", () => {
-  // Theme
+  
+  // Apply saved theme on EVERY page
+  const saved = localStorage.getItem("theme") || "light";
+  document.documentElement.setAttribute("data-theme", saved);
+
+  // Only attach toggle logic if the toggle exists
   const toggle = document.getElementById("theme-toggle");
+
   if (toggle) {
-    const saved = localStorage.getItem("theme") || "light";
-    document.documentElement.setAttribute("data-theme", saved);
     toggle.checked = saved === "dark";
+
     toggle.addEventListener("change", () => {
       const theme = toggle.checked ? "dark" : "light";
+
       document.documentElement.setAttribute("data-theme", theme);
       localStorage.setItem("theme", theme);
-      if (document.getElementById("filter-category")) populateFilterDropdown();
+
+      if (document.getElementById("filter-category")) {
+        populateFilterDropdown();
+      }
     });
   }
 
@@ -639,6 +648,11 @@ window.addEventListener("DOMContentLoaded", () => {
   const filterCat = document.getElementById("filter-category");
   if (search) search.addEventListener("input", applyFilters);
   if (filterCat) filterCat.addEventListener("change", applyFilters);
+
+  const categorySelect = document.getElementById("p-cat");
+  if (categorySelect) {
+    categorySelect.addEventListener("change", updateAutoSKU);
+  }
 
   // Category form
   const catForm = document.getElementById("add-category-form");
