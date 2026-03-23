@@ -372,7 +372,7 @@ async function exportCSV() {
 async function createAdmin() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
-
+  
   try {
     await fetchAdminKey();                    // ← moved inside try
 
