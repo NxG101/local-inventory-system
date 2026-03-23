@@ -178,7 +178,6 @@ async function addInventoryItem(e) {
       await updateDoc(doc(db, "inventory", editingId), itemData);
       alert("✅ Item updated (with QR code)!");
       editingId = null;
-      currentEditingQR = null;
       document.querySelector("#modal h2").textContent = "Add New Item";
     } else {
       await addDoc(collection(db, "inventory"), itemData);
@@ -188,6 +187,7 @@ async function addInventoryItem(e) {
     loadInventory();
   } catch (err) {
     alert("Error: " + err.message);
+    console.error(err); 
   }
 }
 
@@ -248,9 +248,6 @@ function openModal() {
   // Clear previews
   const imagePrev = document.getElementById("image-preview");
   if (imagePrev) imagePrev.style.display = "none";
-  
-  const qrPrev = document.getElementById("qr-preview");
-  if (qrPrev) qrPrev.style.display = "none";
 }
 
 function closeModal() {
@@ -506,12 +503,24 @@ async function uploadImage(file) {
 async function populateCategoryDropdown() {
   const select = document.getElementById("p-cat");
   if (!select) return;
+
   select.innerHTML = "";
+
   const snapshot = await getDocs(collection(db, "categories"));
+
+  if (snapshot.empty) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "No categories yet – add one in the Categories page first";
+    opt.disabled = true;
+    select.appendChild(opt);
+    return;
+  }
+
   snapshot.forEach(doc => {
     const cat = doc.data();
     const opt = document.createElement("option");
-    opt.value = cat.name;
+    opt.value = cat.name;           // ← uses the "name" field from your doc
     opt.textContent = cat.name;
     select.appendChild(opt);
   });
