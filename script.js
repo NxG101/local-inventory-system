@@ -32,6 +32,7 @@ window.db = db;
 let ADMIN_KEY = "";
 let editingId = null;
 let currentEditingImage = null;
+let currentEditingQR = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
 
@@ -256,7 +257,6 @@ async function deleteItem(id) {
   loadInventory();
 }
 
-// ================== OPEN MODAL TEST QUEUE ==================
 function openModal() {
   document.getElementById("modal").style.display = "flex";
   
@@ -359,7 +359,7 @@ async function saveProfile() {
     if (username) updateData.username = username;
     if (imageUrl) updateData.profileImage = imageUrl;
 
-    await updateDoc(doc(db, "users", user.uid), updateData);
+    await setDoc(doc(db, "users", user.uid), updateData, { merge: true });
 
     // Update UI
     if (username) {
@@ -424,7 +424,7 @@ async function exportCSV() {
 async function createAdmin() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
-  
+
   try {
     await fetchAdminKey();                    // ← moved inside try
 
@@ -698,19 +698,5 @@ window.viewQR = viewQR;
   if (document.getElementById("inventory-table")) loadInventory();
   if (document.getElementById("categories-body")) loadCategories();
 });
-
-// ──────────────────────────────
-// EMERGENCY FIX — forces the button to work
-// ──────────────────────────────
-window.openModal = function() {
-    console.log("✅ Emergency openModal triggered from bottom of script.js");
-    const modal = document.getElementById("modal");
-    if (modal) {
-        modal.style.display = "flex";
-        console.log("✅ Modal is now open!");
-    } else {
-        alert("Modal element not found");
-    }
-};
 
 export { db, loadInventory, addInventoryItem, deleteItem, editItem, openModal, closeModal, loadCategories, addCategory, deleteCategory, openCategoryModal, closeCategoryModal, createAdmin, login, changePassword, logout };
