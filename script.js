@@ -30,7 +30,6 @@ const storage = getStorage(app);
 window.db = db;
 
 let ADMIN_KEY = "";
-fetchAdminKey();
 let editingId = null;
 let currentEditingImage = null;
 let allInventory = [];
@@ -366,6 +365,9 @@ async function exportCSV() {
 async function createAdmin() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
+  
+  await fetchAdminKey();
+  
   const email = document.getElementById("newEmail").value.trim();
   const password = document.getElementById("newPassword").value;
   const key = document.getElementById("adminKey").value;
