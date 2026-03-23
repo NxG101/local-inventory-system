@@ -25,7 +25,7 @@
 <a href="settings.html" class="active">Settings</a>
 </nav>
 
-<div class="account-panel">
+<div class="account-panel" onclick="openAccountSwitcher()">
 
 <img src="./images/default-avatar.png" class="profile-img">
 
@@ -153,5 +153,22 @@ Switch between light and dark theme
 
 <script type="module" src="script.js"></script>
 
+
+<div class="modal-overlay" id="account-switcher">
+  <div class="modal">
+    <h2>Switch Account</h2>
+
+    <div id="account-list"></div>
+
+    <div class="form-group">
+      <input type="password" id="switch-password" placeholder="Enter password">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="switchAccount()">Login</button>
+      <button class="btn-cancel" onclick="closeAccountSwitcher()">Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
