@@ -146,7 +146,7 @@ function applyFilters() {
 
 // Add / Edit handler
 async function addInventoryItem(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   const name = document.getElementById("p-name").value.trim();
   const sku = document.getElementById("p-sku").value.trim();
   const category = document.getElementById("p-cat").value;
@@ -648,7 +648,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   const addForm = document.getElementById("add-form");
   if (addForm) {
-      addForm.addEventListener("submit", addInventoryItem);
+      addForm.addEventListener("submit", (e) => addInventoryItem(e));
   }
 
   // Auto-load tables
