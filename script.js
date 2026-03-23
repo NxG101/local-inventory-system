@@ -18,7 +18,8 @@ const firebaseConfig = {
   projectId: "stock-inventory-78e6f",
   storageBucket: "stock-inventory-78e6f.firebasestorage.app",
   messagingSenderId: "437284393762",
-  appId: "1:437284393762:web:d7441ef89cf88e35f94b7b"
+  appId: "1:437284393762:web:d7441ef89cf88e35f94b7b",
+  measurementId: "G-T7LDNHTFW3"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -34,38 +35,46 @@ let currentEditingImage = null;
 let allInventory = [];
 
 // ================== ADMIN KEY ==================
-async function fetchAdminKey() {
-  try {
-    const keyDocRef = doc(db, "settings", "adminConfig");
-    const keyDoc = await getDoc(keyDocRef);
-    if (keyDoc.exists()) {
-      ADMIN_KEY = keyDoc.data().adminKey;
-    } else {
-      await setDoc(keyDocRef, { adminKey: "admin123" });
-      ADMIN_KEY = "admin123";
-      console.log("✅ Default admin key 'admin123' created");
-    }
-  } catch (e) {
-    console.error(e);
-    ADMIN_KEY = "admin123";
+async function createAdmin() {
+
+  if (!ADMIN_KEY) {
+    await fetchAdminKey();
   }
+
+  const email = document.getElementById("newEmail").value.trim();
+  const password = document.getElementById("newPassword").value;
+  const key = document.getElementById("adminKey").value;
+
+  if (key !== ADMIN_KEY) {
+    alert("Invalid Admin Key");
+    return;
+  }
+
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+  await setDoc(doc(db, "users", cred.user.uid), {
+    email: email,
+    role: "admin"
+  });
+
+  window.location.href = "login.html";
 }
-fetchAdminKey();
 
 // ================== AUTH GUARD & PROFILE SYNC ==================
 onAuthStateChanged(auth, (user) => {
   const protectedPages = ["inventory.html", "categories.html", "settings.html"];
   const currentPage = window.location.pathname.split("/").pop();
-  
+
+  // Redirect if not logged in
   if (!user && protectedPages.includes(currentPage)) {
     window.location.href = "login.html";
+    return;
   }
-  
+
   if (user) {
-    document.querySelectorAll("#username, #sidebar-username").forEach(el => {
-      el.textContent = user.email ? user.email.split("@")[0] : "Admin";
-    });
+    loadProfile(); // Firestore loads username + profile image
   }
+
 });
 
 // ================== INVENTORY (updated – no userId filter) ==================
@@ -279,13 +288,51 @@ function closeCategoryModal() {
 }
 
 // ================== SETTINGS & BACKUP ==================
-function saveProfile() {
-  const name = document.getElementById("profile-username").value.trim();
-  if (name) {
-    document.querySelectorAll("#username, #sidebar-username").forEach(el => el.textContent = name);
-    alert("Profile updated!");
+async function saveProfile() {
+
+  const user = auth.currentUser;
+  if (!user) return alert("User not logged in");
+
+  const username = document.getElementById("profile-username").value.trim();
+  const file = document.getElementById("profileImageInput").files[0];
+
+  let imageUrl = null;
+
+  try {
+
+    // Upload new profile image
+    if (file) {
+
+      const storageRef = ref(storage, `profileImages/${user.uid}`);
+      await uploadBytes(storageRef, file);
+
+      imageUrl = await getDownloadURL(storageRef);
+
+      document.getElementById("profilePreview").src = imageUrl;
+    }
+
+    const updateData = {};
+
+    if (username) updateData.username = username;
+    if (imageUrl) updateData.profileImage = imageUrl;
+
+    await updateDoc(doc(db, "users", user.uid), updateData);
+
+    // Update UI
+    if (username) {
+      document.querySelectorAll("#username,#sidebar-username")
+        .forEach(el => el.textContent = username);
+    }
+
+    alert("Profile updated successfully!");
+
+  } catch (error) {
+    console.error(error);
+    alert("Error updating profile");
   }
+
 }
+
 function saveAlert() {
   const val = document.getElementById("low-stock").value;
   alert(`Low-stock threshold set to ${val} (badge uses 5 for demo)`);
@@ -334,8 +381,8 @@ async function exportCSV() {
 async function createAdmin() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
-  const email = document.getElementById("newUser").value.trim();
-  const password = document.getElementById("newPass").value;
+  const email = document.getElementById("newEmail").value.trim();
+  const password = document.getElementById("newPassword").value;
   const key = document.getElementById("adminKey").value;
 
   if (key !== ADMIN_KEY) {
@@ -349,6 +396,7 @@ async function createAdmin() {
     alert("Admin created! Logging in...");
     window.location.href = "login.html";
   } catch (err) {
+    console.error(err); 
     errorEl.textContent = err.message;
     errorEl.style.display = "block";
   }
@@ -358,7 +406,9 @@ async function login() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
   try {
-    await signInWithEmailAndPassword(auth, document.getElementById("newUser").value.trim(), document.getElementById("password").value);
+    await signInWithEmailAndPassword(
+      auth, document.getElementById("loginEmail").value.trim(), 
+      document.getElementById("password").value);
     window.location.href = "inventory.html";
   } catch (err) {
     errorEl.textContent = "Invalid credentials";
@@ -379,6 +429,32 @@ function logout() {
   if (confirm("Logout?")) {
     signOut(auth);
     window.location.href = "login.html";
+  }
+}
+
+async function loadProfile() {
+
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+
+    const data = userSnap.data();
+
+    if (data.username) {
+      const usernameInput = document.getElementById("profile-username");
+      if (usernameInput) usernameInput.value = data.username;
+      document.querySelectorAll("#username,#sidebar-username")
+        .forEach(el => el.textContent = data.username);
+    }
+
+    if (data.profileImage) {
+      document.getElementById("profilePreview").src = data.profileImage;
+    }
+
   }
 }
 
