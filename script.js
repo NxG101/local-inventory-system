@@ -37,6 +37,9 @@ let allInventory = [];
 // ================== ADMIN KEY ==================
 async function createAdmin() {
 
+  const errorEl = document.getElementById("error");
+  errorEl.style.display = "none";
+
   if (!ADMIN_KEY) {
     await fetchAdminKey();
   }
@@ -46,18 +49,30 @@ async function createAdmin() {
   const key = document.getElementById("adminKey").value;
 
   if (key !== ADMIN_KEY) {
-    alert("Invalid Admin Key");
+    errorEl.textContent = "Invalid Admin Key";
+    errorEl.style.display = "block";
     return;
   }
 
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  try {
 
-  await setDoc(doc(db, "users", cred.user.uid), {
-    email: email,
-    role: "admin"
-  });
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
 
-  window.location.href = "login.html";
+    await setDoc(doc(db, "users", cred.user.uid), {
+      email: email,
+      role: "admin"
+    });
+
+    alert("Account created successfully!");
+    window.location.href = "login.html";
+
+  } catch (err) {
+
+    console.error(err);
+    errorEl.textContent = err.message;
+    errorEl.style.display = "block";
+
+  }
 }
 
 // ================== AUTH GUARD & PROFILE SYNC ==================
