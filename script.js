@@ -7,9 +7,6 @@ import {
   getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, 
   getDoc, setDoc, query, where, onSnapshot  
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-import { 
-  getStorage, ref, uploadBytes, getDownloadURL 
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
 
 
 const firebaseConfig = {
@@ -25,13 +22,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 window.db = db;
 
 let ADMIN_KEY = "";
 let editingId = null;
-let currentEditingImage = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
 
@@ -101,11 +96,8 @@ function renderInventoryTable(data) {
   table.innerHTML = "";
   data.forEach(item => {
     const id = item.id;
-    const imgSrc = item.imageUrl || "https://via.placeholder.com/40x40/eee/666?text=No+Img";
-
     table.innerHTML += `
       <tr>
-        <td><img src="${imgSrc}" class="product-img" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>
         <td>${item.name}</td>
         <td>${item.sku || id}</td>
         <td>${item.category || "-"}</td>
@@ -164,16 +156,10 @@ async function addInventoryItem(e) {
     return;
   }
 
-  const productFile = document.getElementById("p-image").files[0];
-  let imageUrl = currentEditingImage || null;
-
-  if (productFile) imageUrl = await uploadImage(productFile);
-
   const itemData = {
     name, sku, category, size, color, price, stock,
     status: stock <= 5 ? "Low" : "OK",
     dateAdded: new Date().toISOString(),
-    imageUrl,
     userId: auth.currentUser?.uid || null
   };
 
@@ -200,7 +186,6 @@ async function editItem(id) {
     const snap = await getDoc(doc(db, "inventory", id));
     if (!snap.exists()) return alert("Item not found");
     const item = snap.data();
-    currentEditingImage = item.imageUrl || null;
 
     document.getElementById("p-name").value = item.name || "";
     document.getElementById("p-sku").value = item.sku || "";
@@ -215,15 +200,6 @@ async function editItem(id) {
     skuInput.readOnly = false;
     skuInput.style.background = "var(--bg-card)";
     skuInput.style.color = "var(--text-main)";
-
-    if (item.imageUrl) {
-      const preview = document.getElementById("preview-img");
-      const container = document.getElementById("image-preview");
-      if (preview && container) {
-        preview.src = item.imageUrl;
-        container.style.display = "block";
-      }
-    }
     editingId = id;
     document.querySelector("#modal h2").textContent = "Edit Item";
     openModal();
@@ -283,6 +259,17 @@ async function loadCategories() {
         <td><button onclick="deleteCategory('${id}')" class="btn-outline">Delete</button></td>
       </tr>`;
   });
+}
+
+function getCategoryImage(category) {
+  const map = {
+    Top: "./images/top.png",
+    Bottom: "./images/bottom.png",
+    Outerwear: "./images/outerwear.png",
+    Accessories: "./images/accessories.png"
+  };
+
+  return map[category] || "./images/default.png";
 }
 
 async function addCategory(e) {
@@ -496,13 +483,6 @@ async function loadProfile() {
   }
 }
 
-async function uploadImage(file) {
-  if (!file) return null;
-  const storageRef = ref(storage, `images/${Date.now()}-${file.name}`);
-  await uploadBytes(storageRef, file);
-  return await getDownloadURL(storageRef);
-}
-
 // ================== DYNAMIC CATEGORIES DROPDOWN ==================
 async function populateCategoryDropdown() {
   const select = document.getElementById("p-cat");
@@ -640,24 +620,6 @@ window.addEventListener("DOMContentLoaded", () => {
   // Category form
   const catForm = document.getElementById("add-category-form");
   if (catForm) catForm.addEventListener("submit", addCategory);
-
-  // ================== IMAGE PREVIEW LIVE (ADD THIS HERE) ==================
-  const fileInput = document.getElementById("p-image");
-  if (fileInput) {
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const preview = document.getElementById("preview-img");
-          if (preview) preview.src = ev.target.result;
-          const previewContainer = document.getElementById("image-preview");
-          if (previewContainer) previewContainer.style.display = "block";
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
 
   const addForm = document.getElementById("add-form");
   if (addForm) {
