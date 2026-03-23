@@ -35,29 +35,13 @@ let currentEditingImage = null;
 let allInventory = [];
 
 // ================== ADMIN KEY ==================
-async function createAdmin() {
+async function fetchAdminKey() {
+  const docRef = doc(db, "config", "admin");
+  const snap = await getDoc(docRef);
 
-  if (!ADMIN_KEY) {
-    await fetchAdminKey();
+  if (snap.exists()) {
+    ADMIN_KEY = snap.data().key;
   }
-
-  const email = document.getElementById("newEmail").value.trim();
-  const password = document.getElementById("newPassword").value;
-  const key = document.getElementById("adminKey").value;
-
-  if (key !== ADMIN_KEY) {
-    alert("Invalid Admin Key");
-    return;
-  }
-
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-
-  await setDoc(doc(db, "users", cred.user.uid), {
-    email: email,
-    role: "admin"
-  });
-
-  window.location.href = "login.html";
 }
 
 // ================== AUTH GUARD & PROFILE SYNC ==================
@@ -381,6 +365,9 @@ async function exportCSV() {
 async function createAdmin() {
   const errorEl = document.getElementById("error");
   errorEl.style.display = "none";
+
+  await fetchAdminKey();
+
   const email = document.getElementById("newEmail").value.trim();
   const password = document.getElementById("newPassword").value;
   const key = document.getElementById("adminKey").value;
