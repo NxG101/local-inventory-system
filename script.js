@@ -258,16 +258,22 @@ async function deleteItem(id) {
 
 // ================== OPEN MODAL TEST QUEUE ==================
 function openModal() {
-  console.log("✅ Button clicked – opening modal now...");
-
-  const modal = document.getElementById("modal");
-  if (modal) {
-    modal.style.display = "flex";
-    console.log("✅ Modal opened successfully!");
-  } else {
-    console.error("❌ Modal element not found in HTML");
-    alert("Modal missing – check inventory.html");
-  }
+  document.getElementById("modal").style.display = "flex";
+  
+  // Load categories + auto SKU (safe, no async issues with onclick)
+  populateCategoryDropdown().then(() => {
+    updateAutoSKU();
+  }).catch(err => {
+    console.error("Category load error:", err);
+    // Still open modal even if categories fail
+  });
+  
+  // Clear previews
+  const imagePrev = document.getElementById("image-preview");
+  if (imagePrev) imagePrev.style.display = "none";
+  
+  const qrPrev = document.getElementById("qr-preview");
+  if (qrPrev) qrPrev.style.display = "none";
 }
 
 function closeModal() {
