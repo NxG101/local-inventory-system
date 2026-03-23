@@ -87,6 +87,7 @@
                         <th>Price</th>
                         <th>Stock</th>
                         <th>Status</th>
+                        <th>QR Code</th> <!-- recently added-->
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -117,14 +118,15 @@
                         <img id="preview-qr" style="max-width:200px;border-radius:8px;border:1px solid var(--border);">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Product Name</label>
                     <input type="text" id="p-name" placeholder="e.g. Cotton T-Shirt" required>
                 </div>
                 <div class="form-group">
-                    <label>SKU</label>
-                    <input type="text" id="p-sku" placeholder="e.g. TS-001" required>
+                    <label>SKU <span style="color:var(--text-muted);font-size:0.75rem;">(Auto-generated)</span></label>
+                    <input type="text" id="p-sku" readonly placeholder="Will auto-fill when category selected" 
+                        style="background:#f9fafb;color:#666;font-weight:500;">
                 </div>
                 <div style="display: flex; gap: 1rem;">
                     <div class="form-group" style="flex:1">
