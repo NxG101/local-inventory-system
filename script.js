@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { 
   getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, 
-  getDoc, setDoc, query, where 
+  getDoc, setDoc, query, where, onSnapshot  
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import { 
   getStorage, ref, uploadBytes, getDownloadURL 
@@ -33,6 +33,7 @@ let ADMIN_KEY = "";
 let editingId = null;
 let currentEditingImage = null;
 let allInventory = [];
+let inventoryUnsubscribe = null;
 
 // ================== ADMIN KEY ==================
 async function fetchAdminKey() {
@@ -72,24 +73,26 @@ onAuthStateChanged(auth, (user) => {
 async function loadInventory() {
   const table = document.getElementById("inventory-table");
   if (!table) return;
-  table.innerHTML = "";
-  allInventory = [];
 
-  // ←←← CHANGED: no where() filter so your existing items show
-  const snapshot = await getDocs(collection(db, "inventory"));
+  // Clean up previous listener if exists
+  if (inventoryUnsubscribe) inventoryUnsubscribe();
 
-  let total = 0, low = 0, value = 0;
-  snapshot.forEach(docItem => {
-    const item = docItem.data();
-    const id = docItem.id;
-    allInventory.push({ ...item, id });
-    total++;
-    if (item.stock <= 5) low++;
-    value += (item.stock * item.price) || 0;
+  inventoryUnsubscribe = onSnapshot(collection(db, "inventory"), (snapshot) => {
+    allInventory = [];
+    let total = 0, low = 0, value = 0;
+
+    snapshot.forEach(docItem => {
+      const item = docItem.data();
+      const id = docItem.id;
+      allInventory.push({ ...item, id });
+      total++;
+      if (item.stock <= 5) low++;
+      value += (item.stock * item.price) || 0;
+    });
+
+    renderInventoryTable(allInventory);
+    updateStats(total, low, value);
   });
-
-  renderInventoryTable(allInventory);
-  updateStats(total, low, value);
 }
 
 function renderInventoryTable(data) {
@@ -99,6 +102,8 @@ function renderInventoryTable(data) {
   data.forEach(item => {
     const id = item.id;
     const imgSrc = item.imageUrl || "https://via.placeholder.com/40x40/eee/666?text=No+Img";
+    const qrSrc = item.qrCodeUrl || null;
+
     table.innerHTML += `
       <tr>
         <td><img src="${imgSrc}" class="product-img" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>
@@ -110,6 +115,11 @@ function renderInventoryTable(data) {
         <td>₱${item.price}</td>
         <td>${item.stock}</td>
         <td>${item.stock <= 5 ? `<span class="badge badge-low">Low</span>` : `<span class="badge badge-ok">OK</span>`}</td>
+        <td>
+          ${qrSrc 
+            ? `<img src="${qrSrc}" style="width:60px;cursor:pointer;border-radius:4px;" onclick="viewQR('${qrSrc}')">` 
+            : `<span style="color:var(--text-muted);font-size:0.8rem;">—</span>`}
+        </td>
         <td>
           <button onclick="editItem('${id}')" class="btn-outline">Edit</button>
           <button onclick="deleteItem('${id}')" class="btn-outline" style="margin-left:5px">Delete</button>
@@ -200,7 +210,13 @@ async function editItem(id) {
     currentEditingImage = item.imageUrl || null;
 
     document.getElementById("p-name").value = item.name || "";
-    document.getElementById("p-sku").value = item.sku || "";
+    
+    // Allow editing SKU only when editing an existing item
+    const skuInput = document.getElementById("p-sku");
+    skuInput.readOnly = false;
+    skuInput.style.background = "var(--bg-card)";
+    skuInput.style.color = "var(--text-main)";
+    
     document.getElementById("p-cat").value = item.category || "Top";
     document.getElementById("p-size").value = item.size || "S";
     document.getElementById("p-color").value = item.color || "";
@@ -243,8 +259,16 @@ async function deleteItem(id) {
 function openModal() {
   document.getElementById("modal").style.display = "flex";
   populateCategoryDropdown();
+  
+  // Auto-generate SKU for NEW items
+  setTimeout(() => {
+    updateAutoSKU();
+  }, 200);
+  
   document.getElementById("image-preview").style.display = "none";
+  document.getElementById("qr-preview").style.display = "none";
 }
+
 function closeModal() {
   document.getElementById("modal").style.display = "none";
   editingId = null;
@@ -256,15 +280,21 @@ async function loadCategories() {
   const tbody = document.getElementById("categories-body");
   if (!tbody) return;
   tbody.innerHTML = "";
-  const snapshot = await getDocs(collection(db, "categories"));
-  snapshot.forEach(docItem => {
+
+  const catSnapshot = await getDocs(collection(db, "categories"));
+  const invSnapshot = await getDocs(collection(db, "inventory"));
+  const inventoryItems = invSnapshot.docs.map(d => d.data());
+
+  catSnapshot.forEach(docItem => {
     const cat = docItem.data();
     const id = docItem.id;
+    const totalProducts = inventoryItems.filter(item => item.category === cat.name).length;
+
     tbody.innerHTML += `
       <tr>
         <td>${cat.name}</td>
-        <td>${cat.description}</td>
-        <td>-</td>
+        <td>${cat.description || "-"}</td>
+        <td>${totalProducts}</td>
         <td><button onclick="deleteCategory('${id}')" class="btn-outline">Delete</button></td>
       </tr>`;
   });
@@ -510,6 +540,56 @@ async function populateCategoryDropdown() {
   });
 }
 
+// ================== AUTO SKU GENERATION ==================
+function generateSKU(category) {
+  if (!category) return "ITEM-0001";
+  
+  const prefix = category.toUpperCase().slice(0, 3) + "-";   // TOP-, BOT-, OUT-, ACC-
+  
+  const existingNumbers = allInventory
+    .filter(item => item.sku && item.sku.startsWith(prefix))
+    .map(item => {
+      const parts = item.sku.split("-");
+      return parts.length > 1 ? parseInt(parts[1]) || 0 : 0;
+    });
+  
+  const nextNumber = existingNumbers.length > 0 
+    ? Math.max(...existingNumbers) + 1 
+    : 1;
+  
+  return prefix + nextNumber.toString().padStart(4, "0");
+}
+
+function updateAutoSKU() {
+  if (editingId !== null) return;   // don't auto-change when editing
+  
+  const catSelect = document.getElementById("p-cat");
+  if (catSelect) catSelect.addEventListener("change", updateAutoSKU);
+  const skuInput = document.getElementById("p-sku");
+  if (!catSelect || !skuInput) return;
+  
+  const category = catSelect.value;
+  if (category) {
+    skuInput.value = generateSKU(category);
+  }
+}
+
+// ================== DYNAMIC FILTER DROPDOWN ==================
+async function populateFilterDropdown() {
+  const select = document.getElementById("filter-category");
+  if (!select) return;
+  select.innerHTML = '<option value="all">All Categories</option>';
+
+  const snapshot = await getDocs(collection(db, "categories"));
+  snapshot.forEach(doc => {
+    const cat = doc.data();
+    const opt = document.createElement("option");
+    opt.value = cat.name;
+    opt.textContent = cat.name;
+    select.appendChild(opt);
+  });
+}
+
 // ================== GLOBAL EXPOSE + INIT ==================
 window.addInventoryItem = addInventoryItem;
 window.loadInventory = loadInventory;
@@ -543,6 +623,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const theme = toggle.checked ? "dark" : "light";
       document.documentElement.setAttribute("data-theme", theme);
       localStorage.setItem("theme", theme);
+      if (document.getElementById("filter-category")) populateFilterDropdown();
     });
   }
 
@@ -591,10 +672,20 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-const addForm = document.getElementById("add-form");
-if (addForm) {
-    addForm.addEventListener("submit", addInventoryItem);
+  function viewQR(url) {
+  if (!url) return alert("No QR code for this item");
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;}</style>
+    <img src="${url}" style="max-width:90%;max-height:90vh;border-radius:8px;">
+  `);
 }
+window.viewQR = viewQR;
+
+  const addForm = document.getElementById("add-form");
+  if (addForm) {
+      addForm.addEventListener("submit", addInventoryItem);
+  }
 
   // Auto-load tables
   if (document.getElementById("inventory-table")) loadInventory();
