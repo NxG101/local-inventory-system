@@ -10,30 +10,30 @@
         .visitor-hero {
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
             color: white;
-            padding: 3rem 2rem;
+            padding: 2.25rem 2rem;           /* smaller hero */
             border-radius: 16px;
             margin-bottom: 2rem;
             text-align: center;
         }
         .visitor-hero h1 {
-            font-size: 2.5rem;
+            font-size: 2.1rem;               /* smaller title */
             margin-bottom: 0.5rem;
         }
         .visitor-hero p {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             opacity: 0.9;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* smaller cards */
+            gap: 1.25rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
             background: var(--bg-card);
-            padding: 1.75rem;
+            padding: 1.4rem;
             border-radius: 12px;
             border: 1px solid var(--border);
             text-align: center;
@@ -41,9 +41,13 @@
         }
 
         .stat-value {
-            font-size: 2rem;
+            font-size: 1.75rem;              /* smaller numbers */
             font-weight: 700;
             color: var(--accent);
+        }
+
+        .recent-section {
+            margin-top: 2.5rem;
         }
     </style>
 </head>
@@ -59,11 +63,9 @@
     </div>
 
     <!-- STATS -->
-    <div class="stats-grid" id="visitor-stats">
-        <!-- Stats injected by JS -->
-    </div>
+    <div class="stats-grid" id="visitor-stats"></div>
 
-    <!-- TABLE -->
+    <!-- MAIN TABLE -->
     <div class="table-container">
         <table>
             <thead>
@@ -79,6 +81,24 @@
             </thead>
             <tbody id="visitor-inventory"></tbody>
         </table>
+    </div>
+
+    <!-- RECENT ORDERS -->
+    <div class="recent-section">
+        <h3 style="margin-bottom:1rem; color:var(--text-main);">Recent Orders</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Ordered By</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-orders"></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- AUTH BUTTONS -->
@@ -125,8 +145,8 @@
             }
         });
 
-        // Render stats
         renderStats(totalItems, totalCategories.size, totalValue);
+        loadRecentOrders();
     }
 
     function renderStats(totalItems, totalCategories, totalValue) {
@@ -145,6 +165,39 @@
                 <div class="stat-value">₱${totalValue.toLocaleString()}</div>
             </div>
         `;
+    }
+
+    async function loadRecentOrders() {
+        const tbody = document.getElementById("recent-orders");
+        tbody.innerHTML = "";
+
+        const snapshot = await getDocs(collection(db, "orders"));
+        const orders = [];
+
+        snapshot.forEach(doc => {
+            const order = doc.data();
+            orders.push(order);
+        });
+
+        // Sort by date (newest first) and take only 5
+        orders.sort((a, b) => (b.date?.toDate?.() || 0) - (a.date?.toDate?.() || 0));
+        const recent = orders.slice(0, 5);
+
+        recent.forEach(order => {
+            const dateStr = order.date ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) : "—";
+            tbody.innerHTML += `
+                <tr>
+                    <td>${order.itemName}</td>
+                    <td>${order.quantity}</td>
+                    <td>${order.user || "—"}</td>
+                    <td>${dateStr}</td>
+                </tr>
+            `;
+        });
+
+        if (recent.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No orders yet</td></tr>`;
+        }
     }
 
     window.onload = loadInventory;
