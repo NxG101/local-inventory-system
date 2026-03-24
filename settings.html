@@ -78,7 +78,7 @@
                 </div>
             </article>
 
-            <!-- NEW: Role Management (separate container) -->
+            <!-- Role Management -->
             <article class="settings-card">
                 <div class="card-head">
                     <h3>Role Management</h3>
@@ -98,6 +98,26 @@
 
                 <div class="card-actions">
                     <button class="btn" onclick="changeRole()">Change Role</button>
+                </div>
+            </article>
+
+            <!-- NEW: All Registered Accounts (only visible to Admin) -->
+            <article class="settings-card" id="admin-users-section" style="display: none;">
+                <div class="card-head">
+                    <h3>All Registered Accounts</h3>
+                    <span>Admin Only</span>
+                </div>
+                <div class="table-container" style="padding: 1rem; margin: 0;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-users-table"></tbody>
+                    </table>
                 </div>
             </article>
 
