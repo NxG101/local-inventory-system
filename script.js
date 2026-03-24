@@ -31,6 +31,7 @@ let ADMIN_KEY = "";
 let editingId = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
+let notificationTimeout = null;
 
 // ================== ADMIN KEY ==================
 async function fetchAdminKey() {
@@ -170,12 +171,12 @@ async function addInventoryItem(e) {
   try {
     if (editingId) {
       await updateDoc(doc(db, "inventory", editingId), itemData);
-      alert("✅ Item updated (with QR code)!");
+      alert("✅ Item updated!");
       editingId = null;
       document.querySelector("#modal h2").textContent = "Add New Item";
     } else {
       await addDoc(collection(db, "inventory"), itemData);
-      alert("✅ Item added with QR code image!");
+      alert("✅ Item added!");
     }
     closeModal();
     loadInventory();
@@ -757,6 +758,37 @@ async function loadOrderHistory() {
     });
 }
 
+// ================== NOTIFICATION SYSTEM (replaces all alerts) ==================
+function showNotification(message, type = "info") {
+    const notif = document.getElementById("notification");
+    if (!notif) {
+        console.warn("Notification element missing — falling back to alert");
+        alert(message);
+        return;
+    }
+
+    const msgEl = document.getElementById("notification-message");
+    msgEl.innerHTML = message;   // keeps ✅ ❌ emojis
+
+    notif.className = `notification ${type}`;
+    notif.style.display = "flex";
+    notif.style.animation = "slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)";
+
+    if (notificationTimeout) clearTimeout(notificationTimeout);
+    notificationTimeout = setTimeout(hideNotification, 4500);
+}
+
+function hideNotification() {
+    const notif = document.getElementById("notification");
+    if (!notif) return;
+
+    notif.style.animation = "slideOut 0.3s ease forwards";
+    setTimeout(() => {
+        notif.style.display = "none";
+        notif.style.animation = "";
+    }, 300);
+}
+
 // ================== GLOBAL EXPOSE + INIT ==================
 window.addInventoryItem = addInventoryItem;
 window.loadInventory = loadInventory;
@@ -778,6 +810,8 @@ window.changePassword = changePassword;
 window.logout = logout;
 window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
+window.showNotification = showNotification;
+window.hideNotification = hideNotification;
 
 window.addEventListener("DOMContentLoaded", () => {
 
