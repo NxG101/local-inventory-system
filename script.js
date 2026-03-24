@@ -451,15 +451,23 @@ async function changePassword() {
 }
 
 async function logout() {
-  if (!confirm("Logout?")) return;
+    if (!confirm("Logout?")) return;
 
-  try {
-    await signOut(auth);               // wait for Firebase to finish logging out
-    window.location.href = "index.html";   // ← changed to index.html
-  } catch (err) {
-    console.error("Logout error:", err);
-    window.location.href = "index.html";   // still go to index even if there's a tiny error
-  }
+    try {
+        await signOut(auth);
+        
+        // RESET THEME TO SYSTEM PREFERENCE
+        localStorage.removeItem("theme");
+        
+        // Apply system default immediately
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute("data-theme", systemDark ? "dark" : "light");
+
+        window.location.href = "index.html";
+    } catch (err) {
+        console.error("Logout error:", err);
+        window.location.href = "index.html";
+    }
 }
 
 async function loadProfile() {
@@ -774,23 +782,28 @@ window.addEventListener("DOMContentLoaded", () => {
     if (orderSelect) orderSelect.addEventListener("change", updateStockPreview);
     if (orderQty) orderQty.addEventListener("input", updateStockPreview);
 
-    // Apply saved theme on EVERY page
-    const saved = localStorage.getItem("theme") || "light";
-    document.documentElement.setAttribute("data-theme", saved);
+    // Theme handling — respects system preference after logout
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const themeToUse = savedTheme || (systemPrefersDark ? "dark" : "light");
+
+    document.documentElement.setAttribute("data-theme", themeToUse);
 
     const toggle = document.getElementById("theme-toggle");
     if (toggle) {
-        toggle.checked = saved === "dark";
+        toggle.checked = themeToUse === "dark";
+
         toggle.addEventListener("change", () => {
-            const theme = toggle.checked ? "dark" : "light";
-            document.documentElement.setAttribute("data-theme", theme);
-            localStorage.setItem("theme", theme);
+            const newTheme = toggle.checked ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+
             if (document.getElementById("filter-category")) {
                 populateFilterDropdown();
             }
         });
     }
-
+    
     // Filters
     const search = document.getElementById("search");
     const filterCat = document.getElementById("filter-category");
