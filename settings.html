@@ -1,159 +1,155 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Settings | Minimal Inventory</title>
-
-<link rel="stylesheet" href="style.css">
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Minimal Inventory</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
 
-<!-- Sidebar -->
-<aside>
+    <!-- Sidebar -->
+    <aside>
+        <div class="logo">STOCK.</div>
 
-<div class="logo">STOCK.</div>
+        <nav>
+            <a href="inventory.html">Inventory</a>
+            <a href="categories.html">Categories</a>
+            <a href="order.html">Order Item</a>
+            <a href="history.html">Order History</a>
+            <a href="settings.html" class="active">Settings</a>
+        </nav>
 
-<nav>
-<a href="inventory.html">Inventory</a>
-<a href="categories.html">Categories</a>
-<a href="order.html" class="active">Order Item</a>
-<a href="history.html">Order History</a>
-<a href="settings.html">Settings</a>
-</nav>
-
-        <!-- Account Display -->
         <div class="account-panel">
-                <img src="./images/default-avatar.png" class="profile-img">
-                <div class="profile-info">
-                    <strong id="username"></strong>
-                    <span>Inventory Manager</span>
-                </div>
-
+            <img src="./images/default-avatar.png" class="profile-img" alt="Profile Picture">
+            <div class="profile-info">
+                <strong id="username"></strong>
+                <span>Inventory Manager</span>
             </div>
+        </div>
     </aside>
 
-</aside>
+    <!-- Main Content -->
+    <main class="settings-page">
+        <header class="page-header">
+            <div>
+                <h1>Settings</h1>
+                <p>Manage your account, preferences, and system controls</p>
+            </div>
+        </header>
 
-<!-- Main Content -->
-<main>
+        <section class="settings-grid">
+            <!-- Appearance -->
+            <article class="settings-card">
+                <div class="card-head">
+                    <h3>Appearance</h3>
+                    <span>Theme</span>
+                </div>
 
-<header>
+                <div class="setting-row">
+                    <div>
+                        <strong>Dark Mode</strong>
+                        <p>Switch between light and dark theme</p>
+                    </div>
 
-<div>
-<h1>Settings</h1>
-<p style="color:var(--text-muted);font-size:0.9rem;margin-top:0.25rem;">
-System preferences
-</p>
-</div>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </article>
 
-</header>
+            <!-- Profile -->
+            <article class="settings-card">
+                <div class="card-head">
+                    <h3>Profile Settings</h3>
+                    <span>Account</span>
+                </div>
 
-<!-- THEME -->
-<div class="table-container" style="padding:1.5rem">
+                <div class="form-group">
+                    <label for="profile-username">Username</label>
+                    <input type="text" id="profile-username" placeholder="Enter new username">
+                </div>
 
-<h3 style="margin-bottom:1rem">Appearance</h3>
+                <div class="card-actions">
+                    <button class="btn" onclick="saveProfile()">Save Profile</button>
+                </div>
+            </article>
 
-<div class="form-group" style="display:flex;justify-content:space-between;align-items:center">
+            <!-- Alerts -->
+            <article class="settings-card">
+                <div class="card-head">
+                    <h3>Inventory Alerts</h3>
+                    <span>Notifications</span>
+                </div>
 
-<div>
-<strong>Dark Mode</strong>
-<p style="font-size:0.8rem;color:var(--text-muted)">
-Switch between light and dark theme
-</p>
-</div>
+                <div class="form-group">
+                    <label for="low-stock">Low Stock Threshold</label>
+                    <input type="number" id="low-stock" value="5" min="1">
+                </div>
 
-<label class="switch">
-<input type="checkbox" id="theme-toggle">
-<span class="slider"></span>
-</label>
+                <div class="card-actions">
+                    <button class="btn" onclick="saveAlert()">Save Alert Settings</button>
+                </div>
+            </article>
 
-</div>
+            <!-- Data Management -->
+            <article class="settings-card">
+                <div class="card-head">
+                    <h3>Data Management</h3>
+                    <span>System</span>
+                </div>
 
-</div>
+                <div class="button-group">
+                    <button class="btn-green" onclick="exportBackup()">Export Backup</button>
+                    <button class="btn-red" onclick="resetInventory()">Reset Inventory</button>
+                </div>
+            </article>
 
-<!-- PROFILE SETTINGS -->
-<div class="table-container" style="padding:1.5rem;margin-top:1.5rem">
+            <!-- Account -->
+            <article class="settings-card">
+                <div class="card-head">
+                    <h3>Account</h3>
+                    <span>Security</span>
+                </div>
 
-<h3 style="margin-bottom:1rem">Profile Settings</h3>
+                <div class="form-group">
+                    <label for="new-password">New Password</label>
+                    <input type="password" id="new-password" placeholder="Enter new password">
+                </div>
 
-<div class="form-group">
-<label>Username</label>
-<input type="text" id="profile-username" placeholder="New Username">
-</div>
+                <div class="button-group">
+                    <button class="btn" onclick="changePassword()">Update Password</button>
+                    <button class="btn-red" onclick="logout()">Logout</button>
+                </div>
+            </article>
 
-<button class="btn" onclick="saveProfile()">Save Profile</button>
+            <!-- System Info -->
+            <article class="settings-card settings-card-wide">
+                <div class="card-head">
+                    <h3>System Information</h3>
+                    <span>About</span>
+                </div>
 
-</div>
+                <div class="info-list">
+                    <p><strong>System Version:</strong> 1.0</p>
+                    <p><strong>Developer:</strong> Hurtarin</p>
+                    <p><strong>Storage:</strong> Local Browser Storage</p>
+                </div>
+            </article>
+        </section>
+    </main>
 
-<!-- INVENTORY ALERTS -->
-<div class="table-container" style="padding:1.5rem;margin-top:1.5rem">
+    <script type="module" src="script.js"></script>
 
-<h3 style="margin-bottom:1rem">Inventory Alerts</h3>
-
-<div class="form-group">
-<label>Low Stock Threshold</label>
-<input type="number" id="low-stock" value="5">
-</div>
-
-<button class="btn" onclick="saveAlert()">Save Alert Settings</button>
-
-</div>
-
-<!-- DATA MANAGEMENT -->
-<div class="table-container" style="padding:1.5rem;margin-top:1.5rem">
-
-<h3 style="margin-bottom:1rem">Data Management</h3>
-
-<button class="btn-green" onclick="exportBackup()">Export Backup</button>
-
-<button class="btn-red" style="margin-left:10px" onclick="resetInventory()">Reset Inventory</button>
-
-</div>
-
-<!-- ACCOUNT -->
-<div class="table-container" style="padding:1.5rem;margin-top:1.5rem">
-
-<h3 style="margin-bottom:1rem">Account</h3>
-
-<div class="form-group">
-<label>New Password</label>
-<input type="password" id="new-password">
-</div>
-
-<button class="btn" onclick="changePassword()">Update Password</button>
-
-<button class="btn-red" style="margin-top:10px" onclick="logout()">Logout</button>
-
-</div>
-
-<!-- SYSTEM INFO -->
-<div class="table-container" style="padding:1.5rem;margin-top:1.5rem">
-
-<h3 style="margin-bottom:1rem">System Information</h3>
-
-<p style="font-size:0.85rem;margin-bottom:0.5rem">
-<strong>System Version:</strong> 1.0
-</p>
-
-<p style="font-size:0.85rem;margin-bottom:0.5rem">
-<strong>Developer:</strong> Hurtarin
-</p>
-
-<p style="font-size:0.85rem">
-<strong>Storage:</strong> Local Browser Storage
-</p>
-
-</div>
-
-</main>
-
-<script type="module" src="script.js"></script>
+<!-- GLOBAL NOTIFICATION BAR -->
+<div id="notification" class="notification">
+    <div class="notification-content">
+        <span id="notification-message"></span>
+    </div>
+    <button class="notification-close" onclick="hideNotification()">×</button>
+</div>    
 
 </body>
 </html>

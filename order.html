@@ -32,35 +32,54 @@
 </aside>
 
 <main>
+    <header>
+        <div>
+            <h1>Order Item</h1>
+            <p style="color:var(--text-muted)">Remove items from stock</p>
+        </div>
+    </header>
 
-<header>
-<h1>Order Item</h1>
-<p style="color:var(--text-muted)">Remove items from stock</p>
-</header>
+    <!-- NEW PROFESSIONAL CONTAINER -->
+    <div class="order-wrapper">
+        <div class="order-card">
+            <form id="order-form">
+                <div class="form-group">
+                    <label>Select Item</label>
+                    <select id="order-item"></select>
+                </div>
 
-<div class="table-container">
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="order-qty" min="1" required>
+                </div>
 
-<form id="order-form">
+                <div class="form-group">
+                    <label>Notes <span style="color:var(--text-muted);font-size:0.75rem;">(optional)</span></label>
+                    <textarea id="order-notes" rows="3" placeholder="Customer name, reason, or reference..."></textarea>
+                </div>
 
-<div class="form-group">
-<label>Select Item</label>
-<select id="order-item"></select>
-</div>
+                <!-- Live Stock Preview -->
+                <div id="stock-info" class="stock-info" style="display:none;">
+                    <strong>Stock Preview</strong><br>
+                    Current Stock: <span id="current-stock" style="font-weight:600;">—</span><br>
+                    After this order: <span id="remaining-stock" style="font-weight:600;">—</span>
+                </div>
 
-<div class="form-group">
-<label>Quantity</label>
-<input type="number" id="order-qty" required>
-</div>
-
-<button class="btn">Complete Order</button>
-
-</form>
-
-</div>
-
+                <button type="submit" class="btn" style="width:100%; margin-top:1rem;">Complete Order</button>
+            </form>
+        </div>
+    </div>
 </main>
 
 <script type="module" src="script.js"></script>
+
+<!-- GLOBAL NOTIFICATION BAR -->
+<div id="notification" class="notification">
+    <div class="notification-content">
+        <span id="notification-message"></span>
+    </div>
+    <button class="notification-close" onclick="hideNotification()">×</button>
+</div>    
 
 </body>
 </html>

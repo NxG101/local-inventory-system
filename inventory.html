@@ -15,9 +15,9 @@
         <div class="logo">STOCK.</div>
 
         <nav>
-            <a href="inventory.html">Inventory</a>
+            <a href="inventory.html" class="active">Inventory</a>
             <a href="categories.html">Categories</a>
-            <a href="order.html" class="active">Order Item</a>
+            <a href="order.html">Order Item</a>
             <a href="history.html">Order History</a>
             <a href="settings.html">Settings</a>
         </nav>
@@ -46,7 +46,7 @@
             </div>
         </header>
 
-        <!-- Stats -->
+        <!-- STATS - compact like index.html -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-label">Total Items</div>
@@ -59,6 +59,10 @@
             <div class="stat-card">
                 <div class="stat-label">Total Value</div>
                 <div class="stat-value">₱0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Stocks</div>
+                <div class="stat-value" id="total-stock">0</div>
             </div>
         </div>
 
@@ -153,5 +157,14 @@
         </div>
     </div>
     <script type="module" src="script.js"></script>
+
+<!-- GLOBAL NOTIFICATION BAR -->
+<div id="notification" class="notification">
+    <div class="notification-content">
+        <span id="notification-message"></span>
+    </div>
+    <button class="notification-close" onclick="hideNotification()">×</button>
+</div>    
+
 </body>
 </html>

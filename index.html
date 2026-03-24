@@ -1,123 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock Viewer | Minimal Inventory</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Stock | STOCK.</title>
+    <link rel="stylesheet" href="style.css">
 
-<style>
-.visitor-header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:2rem;
-}
+    <style>
+        .visitor-hero {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: white;
+            padding: 2.25rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .visitor-hero h1 {
+            font-size: 2.1rem;
+            margin-bottom: 0.5rem;
+        }
+        .visitor-hero p {
+            font-size: 1.05rem;
+            opacity: 0.9;
+        }
 
-.auth-buttons{
-display:flex;
-gap:10px;
-}
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
 
-.auth-buttons a{
-text-decoration:none;
-}
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.4rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
 
-.auth-btn{
-padding:0.5rem 1rem;
-border-radius:6px;
-font-size:0.85rem;
-border:1px solid var(--border);
-background:var(--bg-card);
-cursor:pointer;
-}
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
 
-.auth-btn.primary{
-background:var(--text-main);
-color:white;
-border:none;
-}
-
-.auth-btn:hover{
-opacity:0.9;
-}
-</style>
+        .recent-section {
+            margin-top: 2.5rem;
+        }
+    </style>
 </head>
 
 <body>
 
-<main style="width:100%; padding:2rem 3rem;">
+<main style="width:100%; padding:2rem 3rem; max-width:1200px; margin:0 auto;">
 
-<div class="visitor-header">
+    <!-- HERO -->
+    <div class="visitor-hero">
+        <h1>Available Stock</h1>
+        <p>Real-time clothing inventory • Updated live from our warehouse</p>
+    </div>
 
-<div>
-<h1>Available Stock</h1>
-<p style="color:var(--text-muted);font-size:0.9rem;">
-View current available clothing items
-</p>
-</div>
+    <!-- STATS -->
+    <div class="stats-grid" id="visitor-stats"></div>
 
-<div class="auth-buttons">
-<a href="login.html"><button class="auth-btn">Log In</button></a>
-<a href="signup.html"><button class="auth-btn primary">Sign Up</button></a>
-</div>
+    <!-- MAIN TABLE -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Size</th>
+                    <th>Color</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody id="visitor-inventory"></tbody>
+        </table>
+    </div>
 
-</div>
+    <!-- RECENT ORDERS (TODAY ONLY) -->
+    <div class="recent-section">
+        <h3 style="margin-bottom:1rem; color:var(--text-main);">Recent Orders Today</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Ordered By</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-orders"></tbody>
+            </table>
+        </div>
+    </div>
 
-<!-- Inventory Table -->
-
-<div class="table-container">
-<table>
-
-<thead>
-<tr>
-<th>Product</th>
-<th>SKU</th>
-<th>Category</th>
-<th>Size</th>
-<th>Color</th>
-<th>Price</th>
-<th>Stock</th>
-</tr>
-</thead>
-
-<tbody id="visitor-inventory">
-
-</tbody>
-
-</table>
-</div>
+    <!-- AUTH BUTTONS -->
+    <div class="visitor-header" style="margin-top:2rem; justify-content:flex-end;">
+        <div class="auth-buttons">
+            <a href="login.html"><button class="auth-btn primary">Log In</button></a>
+            <a href="signup.html"><button class="auth-btn">Sign Up</button></a>
+        </div>
+    </div>
 
 </main>
 
 <script type="module">
-import { db } from "./script.js";
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { db } from "./script.js";
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-const table = document.getElementById("visitor-inventory");
+    async function loadInventory() {
+        const table = document.getElementById("visitor-inventory");
+        table.innerHTML = "";
 
-async function loadInventory(){
-    table.innerHTML = "";
-    const snapshot = await getDocs(collection(db,"inventory"));
-    snapshot.forEach(doc=>{
-        const item = doc.data();
-        if(item.stock > 0){
-            table.innerHTML += `
-            <tr>
-                <td>${item.name}</td>
-                <td>${item.sku || doc.id}</td>
-                <td>${item.category || "-"}</td>
-                <td>${item.size || "-"}</td>
-                <td>${item.color || "-"}</td>
-                <td>₱${item.price}</td>
-                <td>${item.stock}</td>
-            </tr>
+        const snapshot = await getDocs(collection(db, "inventory"));
+        let totalItems = 0;
+        let totalValue = 0;
+        let totalCategories = new Set();
+        let totalStock = 0;
+
+        snapshot.forEach(doc => {
+            const item = doc.data();
+            if (item.stock > 0) {
+                totalItems++;
+                totalValue += (item.price || 0) * item.stock;
+                totalCategories.add(item.category || "Other");
+                totalStock += item.stock;
+
+                table.innerHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.sku || doc.id}</td>
+                        <td>${item.category || "Other"}</td>
+                        <td>${item.size || "-"}</td>
+                        <td>${item.color || "-"}</td>
+                        <td>₱${item.price}</td>
+                        <td><strong>${item.stock}</strong></td>
+                    </tr>
+                `;
+            }
+        });
+
+        renderStats(totalItems, totalCategories.size, totalValue, totalStock);
+        loadRecentOrdersToday();
+    }
+
+    function renderStats(totalItems, totalCategories, totalValue, totalStock) {
+        const container = document.getElementById("visitor-stats");
+        container.innerHTML = `
+            <div class="stat-card">
+                <div style="color:var(--text-muted);font-size:0.85rem;">AVAILABLE ITEMS</div>
+                <div class="stat-value">${totalItems}</div>
+            </div>
+            <div class="stat-card">
+                <div style="color:var(--text-muted);font-size:0.85rem;">CATEGORIES</div>
+                <div class="stat-value">${totalCategories}</div>
+            </div>
+            <div class="stat-card">
+                <div style="color:var(--text-muted);font-size:0.85rem;">TOTAL VALUE</div>
+                <div class="stat-value">₱${totalValue.toLocaleString()}</div>
+            </div>
+            <div class="stat-card">
+                <div style="color:var(--text-muted);font-size:0.85rem;">TOTAL STOCKS</div>
+                <div class="stat-value">${totalStock}</div>
+            </div>
+        `;
+    }
+
+    async function loadRecentOrdersToday() {
+        const tbody = document.getElementById("recent-orders");
+        tbody.innerHTML = "";
+
+        const snapshot = await getDocs(collection(db, "orders"));
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const orders = [];
+        snapshot.forEach(doc => {
+            const order = doc.data();
+            const orderDate = order.date?.toDate ? order.date.toDate() : new Date(order.date);
+            if (orderDate >= todayStart) orders.push(order);
+        });
+
+        orders.sort((a, b) => (b.date?.toDate?.() || 0) - (a.date?.toDate?.() || 0));
+
+        orders.forEach(order => {
+            const dateStr = order.date ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) : "—";
+            tbody.innerHTML += `
+                <tr>
+                    <td>${order.itemName}</td>
+                    <td>${order.quantity}</td>
+                    <td>${order.username || order.user || "-"}</td>
+                    <td>${dateStr}</td>
+                </tr>
             `;
+        });
+
+        if (orders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No orders today</td></tr>`;
         }
-    });
-}
-window.onload = loadInventory;
+    }
+
+    window.onload = loadInventory;
 </script>
+
+<!-- GLOBAL NOTIFICATION BAR -->
+<div id="notification" class="notification">
+    <div class="notification-content">
+        <span id="notification-message"></span>
+    </div>
+    <button class="notification-close" onclick="hideNotification()">×</button>
+</div>    
 
 </body>
 </html>

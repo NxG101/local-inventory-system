@@ -31,6 +31,7 @@ let ADMIN_KEY = "";
 let editingId = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
+let notificationTimeout = null;
 
 // ================== ADMIN KEY ==================
 async function fetchAdminKey() {
@@ -88,7 +89,8 @@ async function loadInventory() {
     });
 
     renderInventoryTable(allInventory);
-    updateStats(total, low, value);
+    const totalStock = allInventory.reduce((sum, item) => sum + (item.stock || 0), 0);
+    updateStats(total, low, value, totalStock);
   });
 }
 
@@ -116,13 +118,14 @@ function renderInventoryTable(data) {
   });
 }
 
-function updateStats(total, low, value) {
-  const stats = document.querySelectorAll(".stat-value");
-  if (stats.length >= 3) {
-    stats[0].innerText = total;
-    stats[1].innerText = low;
-    stats[2].innerText = `₱${value}`;
-  }
+function updateStats(total, low, value, totalStock) {
+    const stats = document.querySelectorAll(".stat-value");
+    if (stats.length >= 4) {
+        stats[0].innerText = total;
+        stats[1].innerText = low;
+        stats[2].innerText = `₱${value}`;
+        stats[3].innerText = totalStock;
+    }
 }
 
 function applyFilters() {
@@ -168,12 +171,12 @@ async function addInventoryItem(e) {
   try {
     if (editingId) {
       await updateDoc(doc(db, "inventory", editingId), itemData);
-      alert("✅ Item updated (with QR code)!");
+      alert("✅ Item updated!");
       editingId = null;
       document.querySelector("#modal h2").textContent = "Add New Item";
     } else {
       await addDoc(collection(db, "inventory"), itemData);
-      alert("✅ Item added with QR code image!");
+      alert("✅ Item added!");
     }
     closeModal();
     loadInventory();
@@ -350,16 +353,18 @@ function saveAlert() {
 
 async function resetInventory() {
   if (!confirm("Reset ALL inventory?")) return;
+  if (!ADMIN_KEY) await fetchAdminKey();   // ← THIS FIXES IT
   const key = prompt("Enter Admin Key:");
   if (key !== ADMIN_KEY) return alert("Invalid key");
   const snapshot = await getDocs(collection(db, "inventory"));
   for (const d of snapshot.docs) await deleteDoc(d.ref);
   alert("Inventory reset");
-  loadInventory();
+  if (document.getElementById("inventory-table")) loadInventory();
 }
 
 async function exportBackup() {
   if (!confirm("Export backup?")) return;
+  if (!ADMIN_KEY) await fetchAdminKey();   // ← THIS FIXES IT
   const key = prompt("Enter Admin Key:");
   if (key !== ADMIN_KEY) return alert("Invalid key");
   const snapshot = await getDocs(collection(db, "inventory"));
@@ -439,6 +444,7 @@ async function login() {
 }
 
 async function changePassword() {
+  if (!ADMIN_KEY) await fetchAdminKey();
   const key = prompt("Enter Admin Key:");
   if (key !== ADMIN_KEY) return alert("Invalid key");
   const newPass = document.getElementById("new-password").value;
@@ -448,15 +454,23 @@ async function changePassword() {
 }
 
 async function logout() {
-  if (!confirm("Logout?")) return;
+    if (!confirm("Logout?")) return;
 
-  try {
-    await signOut(auth);               // wait for Firebase to finish logging out
-    window.location.href = "index.html";   // ← changed to index.html
-  } catch (err) {
-    console.error("Logout error:", err);
-    window.location.href = "index.html";   // still go to index even if there's a tiny error
-  }
+    try {
+        await signOut(auth);
+        
+        // RESET THEME TO SYSTEM PREFERENCE
+        localStorage.removeItem("theme");
+        
+        // Apply system default immediately
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute("data-theme", systemDark ? "dark" : "light");
+
+        window.location.href = "index.html";
+    } catch (err) {
+        console.error("Logout error:", err);
+        window.location.href = "index.html";
+    }
 }
 
 async function loadProfile() {
@@ -588,6 +602,45 @@ async function loadOrderItems() {
 
 }
 
+async function updateStockPreview() {
+    const select = document.getElementById("order-item");
+    const qtyInput = document.getElementById("order-qty");
+    const info = document.getElementById("stock-info");
+    const currentSpan = document.getElementById("current-stock");
+    const remainingSpan = document.getElementById("remaining-stock");
+
+    if (!select.value) {
+        info.style.display = "none";
+        return;
+    }
+
+    try {
+        const itemRef = doc(db, "inventory", select.value);
+        const snap = await getDoc(itemRef);
+        if (snap.exists()) {
+            const item = snap.data();
+            const qty = parseInt(qtyInput.value) || 0;
+            const remaining = item.stock - qty;
+
+            currentSpan.textContent = item.stock;
+            remainingSpan.textContent = remaining;
+
+            if (remaining < 0) {
+                remainingSpan.style.color = "var(--danger)";
+                remainingSpan.textContent = remaining + " (Not enough stock!)";
+            } else if (remaining <= 5) {
+                remainingSpan.style.color = "var(--accent)";
+            } else {
+                remainingSpan.style.color = "var(--success)";
+            }
+
+            info.style.display = "block";
+        }
+    } catch (err) {
+        console.error("Stock preview error:", err);
+    }
+}
+
 async function placeOrder(e){
 
   e.preventDefault();
@@ -629,77 +682,111 @@ async function placeOrder(e){
 
 }
 
-async function completeOrder(e){
+async function completeOrder(e) {
+    e.preventDefault();
+    const itemId = document.getElementById("order-item").value;
+    const qty = parseInt(document.getElementById("order-qty").value);
+    const notes = document.getElementById("order-notes").value.trim();
 
-  e.preventDefault();
+    if (!itemId || !qty) return alert("Please fill all fields");
 
-  const itemId = document.getElementById("order-item").value;
-  const qty = parseInt(document.getElementById("order-qty").value);
+    try {
+        const itemRef = doc(db, "inventory", itemId);
+        const itemSnap = await getDoc(itemRef);
+        if (!itemSnap.exists()) throw new Error("Item not found");
 
-  const user = auth.currentUser;
+        const item = itemSnap.data();
+        if (qty > item.stock) throw new Error("Not enough stock!");
 
-  if(!user) return alert("User not logged in");
+        const newStock = item.stock - qty;
 
-  const itemRef = doc(db,"inventory",itemId);
-  const itemSnap = await getDoc(itemRef);
+        // Get username from user profile
+        const userRef = doc(db, "users", auth.currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        const username = userSnap.exists() && userSnap.data().username 
+            ? userSnap.data().username 
+            : auth.currentUser.email.split("@")[0];
 
-  if(!itemSnap.exists()) return alert("Item not found");
+        await updateDoc(itemRef, { stock: newStock });
 
-  const item = itemSnap.data();
+        await addDoc(collection(db, "orders"), {
+            itemName: item.name,
+            sku: item.sku || itemId,
+            quantity: qty,
+            username: username,           // ← this is what we display now
+            user: auth.currentUser.email, // kept for Email column
+            notes: notes || null,
+            date: serverTimestamp()
+        });
 
-  if(qty > item.stock){
-    alert("Not enough stock");
-    return;
-  }
+        alert("✅ Order completed successfully!");
+        document.getElementById("order-form").reset();
+        loadOrderItems();
+        setTimeout(() => window.location.reload(), 800);
 
-  const newStock = item.stock - qty;
-
-  // Update stock
-  await updateDoc(itemRef,{
-    stock:newStock
-  });
-
-  // Record order
-  await addDoc(collection(db,"orders"),{
-
-    itemId:itemId,
-    itemName:item.name,
-    quantity:qty,
-    userId:user.uid,
-    username:user.email,
-    date:serverTimestamp()
-
-  });
-
-  alert("Order completed!");
-
+    } catch (err) {
+        console.error(err);
+        alert("❌ " + (err.message || "Something went wrong"));
+    }
 }
 
-async function loadOrderHistory(){
+async function loadOrderHistory() {
+    const table = document.getElementById("order-history");
+    if (!table) return;
 
-  const table = document.getElementById("order-history");
+    table.innerHTML = "";
 
-  if(!table) return;
+    const snapshot = await getDocs(collection(db, "orders"));
+    snapshot.forEach(docItem => {
+        const order = docItem.data();
+        const notesText = order.notes && order.notes.trim() !== "" ? order.notes : "No Notes Written";
+        const dateStr = order.date 
+            ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) 
+            : "—";
 
-  const snapshot = await getDocs(collection(db,"orders"));
+        table.innerHTML += `
+            <tr>
+                <td>${order.itemName || "-"}</td>
+                <td>${order.sku || "-"}</td>
+                <td>${order.quantity || 0}</td>
+                <td>${order.username || order.user || "-"}</td>   <!-- ← Username here -->
+                <td>${order.user || "-"}</td>
+                <td>${dateStr}</td>
+                <td>${notesText}</td>
+            </tr>
+        `;
+    });
+}
 
-  table.innerHTML = "";
+// ================== NOTIFICATION SYSTEM (replaces all alerts) ==================
+function showNotification(message, type = "info") {
+    const notif = document.getElementById("notification");
+    if (!notif) {
+        console.warn("Notification element missing — falling back to alert");
+        alert(message);
+        return;
+    }
 
-  snapshot.forEach(docItem=>{
+    const msgEl = document.getElementById("notification-message");
+    msgEl.innerHTML = message;   // keeps ✅ ❌ emojis
 
-    const order = docItem.data();
+    notif.className = `notification ${type}`;
+    notif.style.display = "flex";
+    notif.style.animation = "slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)";
 
-    table.innerHTML += `
-    <tr>
-      <td>${order.itemName}</td>
-      <td>${order.quantity}</td>
-      <td>${order.username}</td>
-      <td>${order.date?.toDate().toLocaleString() || ""}</td>
-    </tr>
-    `;
+    if (notificationTimeout) clearTimeout(notificationTimeout);
+    notificationTimeout = setTimeout(hideNotification, 4500);
+}
 
-  });
+function hideNotification() {
+    const notif = document.getElementById("notification");
+    if (!notif) return;
 
+    notif.style.animation = "slideOut 0.3s ease forwards";
+    setTimeout(() => {
+        notif.style.display = "none";
+        notif.style.animation = "";
+    }, 300);
 }
 
 // ================== GLOBAL EXPOSE + INIT ==================
@@ -723,54 +810,71 @@ window.changePassword = changePassword;
 window.logout = logout;
 window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
+window.showNotification = showNotification;
+window.hideNotification = hideNotification;
 
 window.addEventListener("DOMContentLoaded", () => {
-  
-  // Apply saved theme on EVERY page
-  const saved = localStorage.getItem("theme") || "light";
-  document.documentElement.setAttribute("data-theme", saved);
 
-  // Only attach toggle logic if the toggle exists
-  const toggle = document.getElementById("theme-toggle");
+    loadOrderItems();
 
-  if (toggle) {
-    toggle.checked = saved === "dark";
+    const orderForm = document.getElementById("order-form");
+    if(orderForm){
+        orderForm.addEventListener("submit", completeOrder);
+    }
 
-    toggle.addEventListener("change", () => {
-      const theme = toggle.checked ? "dark" : "light";
+    // === NEW: Live stock preview listeners ===
+    const orderSelect = document.getElementById("order-item");
+    const orderQty = document.getElementById("order-qty");
+    if (orderSelect) orderSelect.addEventListener("change", updateStockPreview);
+    if (orderQty) orderQty.addEventListener("input", updateStockPreview);
 
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
+    // Theme handling — respects system preference after logout
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const themeToUse = savedTheme || (systemPrefersDark ? "dark" : "light");
 
-      if (document.getElementById("filter-category")) {
-        populateFilterDropdown();
-      }
-    });
-  }
+    document.documentElement.setAttribute("data-theme", themeToUse);
 
-  // Filters
-  const search = document.getElementById("search");
-  const filterCat = document.getElementById("filter-category");
-  if (search) search.addEventListener("input", applyFilters);
-  if (filterCat) filterCat.addEventListener("change", applyFilters);
+    const toggle = document.getElementById("theme-toggle");
+    if (toggle) {
+        toggle.checked = themeToUse === "dark";
 
-  const categorySelect = document.getElementById("p-cat");
-  if (categorySelect) {
-    categorySelect.addEventListener("change", updateAutoSKU);
-  }
+        toggle.addEventListener("change", () => {
+            const newTheme = toggle.checked ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
 
-  // Category form
-  const catForm = document.getElementById("add-category-form");
-  if (catForm) catForm.addEventListener("submit", addCategory);
+            if (document.getElementById("filter-category")) {
+                populateFilterDropdown();
+            }
+        });
+    }
 
-  const addForm = document.getElementById("add-form");
-  if (addForm) {
-      addForm.addEventListener("submit", addInventoryItem);
-  }
+    // Filters
+    const search = document.getElementById("search");
+    const filterCat = document.getElementById("filter-category");
+    if (search) search.addEventListener("input", applyFilters);
+    if (filterCat) filterCat.addEventListener("change", applyFilters);
 
-  // Auto-load tables
-  if (document.getElementById("inventory-table")) loadInventory();
-  if (document.getElementById("categories-body")) loadCategories();
-});
+    const categorySelect = document.getElementById("p-cat");
+    if (categorySelect) {
+        categorySelect.addEventListener("change", updateAutoSKU);
+    }
+
+    // Category form
+    const catForm = document.getElementById("add-category-form");
+    if (catForm) catForm.addEventListener("submit", addCategory);
+
+    const addForm = document.getElementById("add-form");
+    if (addForm) {
+        addForm.addEventListener("submit", addInventoryItem);
+    }
+
+    // Auto-load tables
+    if (document.getElementById("inventory-table")) loadInventory();
+    if (document.getElementById("categories-body")) loadCategories();
+    if (document.getElementById("order-history")) loadOrderHistory(); // from previous fix
+    fetchAdminKey();
+  });
 
 export { db, loadInventory, addInventoryItem, deleteItem, editItem, openModal, closeModal, loadCategories, addCategory, deleteCategory, openCategoryModal, closeCategoryModal, createAdmin, login, changePassword, logout };

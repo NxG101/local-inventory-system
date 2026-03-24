@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Login</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -49,6 +50,14 @@ document.getElementById("login-form").addEventListener("submit", function(e){
     login();
 });
 </script>
+
+<!-- GLOBAL NOTIFICATION BAR -->
+<div id="notification" class="notification">
+    <div class="notification-content">
+        <span id="notification-message"></span>
+    </div>
+    <button class="notification-close" onclick="hideNotification()">×</button>
+</div>    
 
 </body>
 </html>
