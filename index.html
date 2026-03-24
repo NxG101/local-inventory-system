@@ -10,13 +10,13 @@
         .visitor-hero {
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
             color: white;
-            padding: 2.25rem 2rem;           /* smaller hero */
+            padding: 2.25rem 2rem;
             border-radius: 16px;
             margin-bottom: 2rem;
             text-align: center;
         }
         .visitor-hero h1 {
-            font-size: 2.1rem;               /* smaller title */
+            font-size: 2.1rem;
             margin-bottom: 0.5rem;
         }
         .visitor-hero p {
@@ -26,7 +26,7 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* smaller cards */
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 1.25rem;
             margin-bottom: 2rem;
         }
@@ -41,7 +41,7 @@
         }
 
         .stat-value {
-            font-size: 1.75rem;              /* smaller numbers */
+            font-size: 1.75rem;
             font-weight: 700;
             color: var(--accent);
         }
@@ -83,9 +83,9 @@
         </table>
     </div>
 
-    <!-- RECENT ORDERS -->
+    <!-- RECENT ORDERS (TODAY ONLY) -->
     <div class="recent-section">
-        <h3 style="margin-bottom:1rem; color:var(--text-main);">Recent Orders</h3>
+        <h3 style="margin-bottom:1rem; color:var(--text-main);">Recent Orders Today</h3>
         <div class="table-container">
             <table>
                 <thead>
@@ -123,6 +123,7 @@
         let totalItems = 0;
         let totalValue = 0;
         let totalCategories = new Set();
+        let totalStock = 0;
 
         snapshot.forEach(doc => {
             const item = doc.data();
@@ -130,6 +131,7 @@
                 totalItems++;
                 totalValue += (item.price || 0) * item.stock;
                 totalCategories.add(item.category || "Other");
+                totalStock += item.stock;
 
                 table.innerHTML += `
                     <tr>
@@ -145,11 +147,11 @@
             }
         });
 
-        renderStats(totalItems, totalCategories.size, totalValue);
-        loadRecentOrders();
+        renderStats(totalItems, totalCategories.size, totalValue, totalStock);
+        loadRecentOrdersToday();
     }
 
-    function renderStats(totalItems, totalCategories, totalValue) {
+    function renderStats(totalItems, totalCategories, totalValue, totalStock) {
         const container = document.getElementById("visitor-stats");
         container.innerHTML = `
             <div class="stat-card">
@@ -164,39 +166,44 @@
                 <div style="color:var(--text-muted);font-size:0.85rem;">TOTAL VALUE</div>
                 <div class="stat-value">₱${totalValue.toLocaleString()}</div>
             </div>
+            <div class="stat-card">
+                <div style="color:var(--text-muted);font-size:0.85rem;">TOTAL STOCKS</div>
+                <div class="stat-value">${totalStock}</div>
+            </div>
         `;
     }
 
-    async function loadRecentOrders() {
+    async function loadRecentOrdersToday() {
         const tbody = document.getElementById("recent-orders");
         tbody.innerHTML = "";
 
         const snapshot = await getDocs(collection(db, "orders"));
-        const orders = [];
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
 
+        const orders = [];
         snapshot.forEach(doc => {
             const order = doc.data();
-            orders.push(order);
+            const orderDate = order.date?.toDate ? order.date.toDate() : new Date(order.date);
+            if (orderDate >= todayStart) orders.push(order);
         });
 
-        // Sort by date (newest first) and take only 5
         orders.sort((a, b) => (b.date?.toDate?.() || 0) - (a.date?.toDate?.() || 0));
-        const recent = orders.slice(0, 5);
 
-        recent.forEach(order => {
+        orders.forEach(order => {
             const dateStr = order.date ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) : "—";
             tbody.innerHTML += `
                 <tr>
                     <td>${order.itemName}</td>
                     <td>${order.quantity}</td>
-                    <td>${order.user || "—"}</td>
+                    <td>${order.username || order.user || "-"}</td>
                     <td>${dateStr}</td>
                 </tr>
             `;
         });
 
-        if (recent.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No orders yet</td></tr>`;
+        if (orders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No orders today</td></tr>`;
         }
     }
 
