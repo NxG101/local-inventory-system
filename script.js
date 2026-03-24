@@ -588,6 +588,45 @@ async function loadOrderItems() {
 
 }
 
+async function updateStockPreview() {
+    const select = document.getElementById("order-item");
+    const qtyInput = document.getElementById("order-qty");
+    const info = document.getElementById("stock-info");
+    const currentSpan = document.getElementById("current-stock");
+    const remainingSpan = document.getElementById("remaining-stock");
+
+    if (!select.value) {
+        info.style.display = "none";
+        return;
+    }
+
+    try {
+        const itemRef = doc(db, "inventory", select.value);
+        const snap = await getDoc(itemRef);
+        if (snap.exists()) {
+            const item = snap.data();
+            const qty = parseInt(qtyInput.value) || 0;
+            const remaining = item.stock - qty;
+
+            currentSpan.textContent = item.stock;
+            remainingSpan.textContent = remaining;
+
+            if (remaining < 0) {
+                remainingSpan.style.color = "var(--danger)";
+                remainingSpan.textContent = remaining + " (Not enough stock!)";
+            } else if (remaining <= 5) {
+                remainingSpan.style.color = "var(--accent)";
+            } else {
+                remainingSpan.style.color = "var(--success)";
+            }
+
+            info.style.display = "block";
+        }
+    } catch (err) {
+        console.error("Stock preview error:", err);
+    }
+}
+
 async function placeOrder(e){
 
   e.preventDefault();
@@ -629,50 +668,38 @@ async function placeOrder(e){
 
 }
 
-async function completeOrder(e){
+async function completeOrder(e) {
+    e.preventDefault();
+    const itemId = document.getElementById("order-item").value;
+    const qty = parseInt(document.getElementById("order-qty").value);
+    const notes = document.getElementById("order-notes").value.trim();
 
-  e.preventDefault();
+    if (!itemId || !qty) return alert("Please fill all fields");
 
-  const itemId = document.getElementById("order-item").value;
-  const qty = parseInt(document.getElementById("order-qty").value);
+    const itemRef = doc(db, "inventory", itemId);
+    const itemSnap = await getDoc(itemRef);
+    if (!itemSnap.exists()) return alert("Item not found");
 
-  const user = auth.currentUser;
+    const item = itemSnap.data();
+    if (qty > item.stock) return alert("Not enough stock!");
 
-  if(!user) return alert("User not logged in");
+    const newStock = item.stock - qty;
 
-  const itemRef = doc(db,"inventory",itemId);
-  const itemSnap = await getDoc(itemRef);
+    await updateDoc(itemRef, { stock: newStock });
 
-  if(!itemSnap.exists()) return alert("Item not found");
+    await addDoc(collection(db, "orders"), {
+        itemName: item.name,
+        sku: item.sku,
+        quantity: qty,
+        user: auth.currentUser.email,
+        notes: notes || null,
+        date: serverTimestamp()
+    });
 
-  const item = itemSnap.data();
-
-  if(qty > item.stock){
-    alert("Not enough stock");
-    return;
-  }
-
-  const newStock = item.stock - qty;
-
-  // Update stock
-  await updateDoc(itemRef,{
-    stock:newStock
-  });
-
-  // Record order
-  await addDoc(collection(db,"orders"),{
-
-    itemId:itemId,
-    itemName:item.name,
-    quantity:qty,
-    userId:user.uid,
-    username:user.email,
-    date:serverTimestamp()
-
-  });
-
-  alert("Order completed!");
-
+    alert("✅ Order completed successfully!");
+    document.getElementById("order-form").reset();
+    loadOrderItems();           // refresh dropdown
+    // preview will hide automatically
 }
 
 async function loadOrderHistory() {
@@ -719,53 +746,61 @@ window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
 
 window.addEventListener("DOMContentLoaded", () => {
-  
-  // Apply saved theme on EVERY page
-  const saved = localStorage.getItem("theme") || "light";
-  document.documentElement.setAttribute("data-theme", saved);
 
-  // Only attach toggle logic if the toggle exists
-  const toggle = document.getElementById("theme-toggle");
+    loadOrderItems();
 
-  if (toggle) {
-    toggle.checked = saved === "dark";
+    const orderForm = document.getElementById("order-form");
+    if(orderForm){
+        orderForm.addEventListener("submit", completeOrder);
+    }
 
-    toggle.addEventListener("change", () => {
-      const theme = toggle.checked ? "dark" : "light";
+    // === NEW: Live stock preview listeners ===
+    const orderSelect = document.getElementById("order-item");
+    const orderQty = document.getElementById("order-qty");
+    if (orderSelect) orderSelect.addEventListener("change", updateStockPreview);
+    if (orderQty) orderQty.addEventListener("input", updateStockPreview);
 
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
+    // Apply saved theme on EVERY page
+    const saved = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", saved);
 
-      if (document.getElementById("filter-category")) {
-        populateFilterDropdown();
-      }
-    });
-  }
+    const toggle = document.getElementById("theme-toggle");
+    if (toggle) {
+        toggle.checked = saved === "dark";
+        toggle.addEventListener("change", () => {
+            const theme = toggle.checked ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", theme);
+            localStorage.setItem("theme", theme);
+            if (document.getElementById("filter-category")) {
+                populateFilterDropdown();
+            }
+        });
+    }
 
-  // Filters
-  const search = document.getElementById("search");
-  const filterCat = document.getElementById("filter-category");
-  if (search) search.addEventListener("input", applyFilters);
-  if (filterCat) filterCat.addEventListener("change", applyFilters);
+    // Filters
+    const search = document.getElementById("search");
+    const filterCat = document.getElementById("filter-category");
+    if (search) search.addEventListener("input", applyFilters);
+    if (filterCat) filterCat.addEventListener("change", applyFilters);
 
-  const categorySelect = document.getElementById("p-cat");
-  if (categorySelect) {
-    categorySelect.addEventListener("change", updateAutoSKU);
-  }
+    const categorySelect = document.getElementById("p-cat");
+    if (categorySelect) {
+        categorySelect.addEventListener("change", updateAutoSKU);
+    }
 
-  // Category form
-  const catForm = document.getElementById("add-category-form");
-  if (catForm) catForm.addEventListener("submit", addCategory);
+    // Category form
+    const catForm = document.getElementById("add-category-form");
+    if (catForm) catForm.addEventListener("submit", addCategory);
 
-  const addForm = document.getElementById("add-form");
-  if (addForm) {
-      addForm.addEventListener("submit", addInventoryItem);
-  }
+    const addForm = document.getElementById("add-form");
+    if (addForm) {
+        addForm.addEventListener("submit", addInventoryItem);
+    }
 
-  // Auto-load tables
-  if (document.getElementById("inventory-table")) loadInventory();
-  if (document.getElementById("categories-body")) loadCategories();
-  if (document.getElementById("order-history")) loadOrderHistory();
+    // Auto-load tables
+    if (document.getElementById("inventory-table")) loadInventory();
+    if (document.getElementById("categories-body")) loadCategories();
+    if (document.getElementById("order-history")) loadOrderHistory(); // from previous fix
 });
 
 export { db, loadInventory, addInventoryItem, deleteItem, editItem, openModal, closeModal, loadCategories, addCategory, deleteCategory, openCategoryModal, closeCategoryModal, createAdmin, login, changePassword, logout };
