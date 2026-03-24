@@ -101,32 +101,6 @@
                 </div>
             </article>
 
-            <!-- NEW: All Registered Accounts (only visible to Admin) -->
-            <article class="settings-card" id="admin-users-section" style="display: none;">
-                <div class="card-head">
-                    <h3>All Registered Accounts</h3>
-                    <span>Admin Only</span>
-                </div>
-
-                <div style="margin-bottom: 1rem;">
-                    <button class="btn" onclick="openUserModal(false)">+ Add New User</button>
-                </div>
-
-                <div class="table-container" style="padding: 1rem; margin: 0;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th style="width: 140px;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="all-users-table"></tbody>
-                    </table>
-                </div>
-            </article>
-
             <!-- Alerts -->
             <article class="settings-card">
                 <div class="card-head">
@@ -172,6 +146,32 @@
                 <div class="button-group">
                     <button class="btn" onclick="changePassword()">Update Password</button>
                     <button class="btn-red" onclick="logout()">Logout</button>
+                </div>
+            </article>
+
+            <!-- ALL REGISTERED ACCOUNTS (now full-width + placed right above System Information) -->
+            <article class="settings-card settings-card-wide" id="admin-users-section" style="display: none;">
+                <div class="card-head">
+                    <h3>All Registered Accounts</h3>
+                    <span>Admin Only</span>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <button class="btn" onclick="openUserModal(false)">+ Add New User</button>
+                </div>
+
+                <div class="table-container" style="padding: 1rem; margin: 0;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th style="width: 140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-users-table"></tbody>
+                    </table>
                 </div>
             </article>
 
