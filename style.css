@@ -201,9 +201,17 @@ h1 {
 /* Table */
 .table-container {
     background: var(--bg-card);
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid var(--border);
     overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    padding: 2rem;           /* matches order-card feel */
+    margin-bottom: 2rem;
+}
+
+.table-container table {
+    margin: -1rem;           /* removes double padding on tables */
+    width: calc(100% + 2rem);
 }
 
 table {
