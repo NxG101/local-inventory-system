@@ -1185,5 +1185,5 @@ window.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("order-history")) loadOrderHistory(); // from previous fix
     fetchAdminKey();
   });
-
-export { db, loadInventory, addInventoryItem, deleteItem, editItem, openModal, closeModal, loadCategories, addCategory, deleteCategory, openCategoryModal, closeCategoryModal, createAdmin, login, changePassword, logout };
+  
+export { db, loadInventory, addInventoryItem, deleteItem, editItem, openModal, closeModal, loadCategories, saveCategory, deleteCategory, openCategoryModal, closeCategoryModal, createAdmin, login, changePassword, logout };
