@@ -563,27 +563,28 @@ async function populateFilterDropdown() {
 }
 
 // ================== Load Item Orders ==================
-async function loadOrderItems(){
+async function loadOrderItems() {
 
-const dropdown = document.getElementById("order-item");
+  const select = document.getElementById("order-item");
+  if(!select) return;
 
-if(!dropdown) return;
+  const snapshot = await getDocs(collection(db,"inventory"));
 
-dropdown.innerHTML = `<option value="">Select Item</option>`;
+  select.innerHTML = "";
 
-const snapshot = await getDocs(collection(db,"inventory"));
+  snapshot.forEach(docItem => {
 
-snapshot.forEach(itemDoc => {
+    const item = docItem.data();
 
-const item = itemDoc.data();
+    if(item.stock > 0){
 
-dropdown.innerHTML += `
-<option value="${itemDoc.id}">
-${item.name} (Stock: ${item.stock})
-</option>
-`;
+      select.innerHTML += `
+      <option value="${docItem.id}">
+        ${item.name} (Stock: ${item.stock})
+      </option>`;
+    }
 
-});
+  });
 
 }
 
@@ -630,74 +631,69 @@ async function placeOrder(e){
 
 async function completeOrder(e){
 
-e.preventDefault();
+  e.preventDefault();
 
-const itemId = document.getElementById("order-item").value;
-const qty = parseInt(document.getElementById("order-qty").value);
+  const itemId = document.getElementById("order-item").value;
+  const qty = parseInt(document.getElementById("order-qty").value);
 
-if(!itemId) return alert("Select item");
+  const user = auth.currentUser;
 
-const itemRef = doc(db,"inventory",itemId);
-const itemSnap = await getDoc(itemRef);
+  if(!user) return alert("User not logged in");
 
-if(!itemSnap.exists()) return alert("Item not found");
+  const itemRef = doc(db,"inventory",itemId);
+  const itemSnap = await getDoc(itemRef);
 
-const item = itemSnap.data();
+  if(!itemSnap.exists()) return alert("Item not found");
 
-if(qty > item.stock){
-alert("Not enough stock");
-return;
-}
+  const item = itemSnap.data();
 
-const newStock = item.stock - qty;
+  if(qty > item.stock){
+    alert("Not enough stock");
+    return;
+  }
 
-await updateDoc(itemRef,{
-stock:newStock
-});
+  const newStock = item.stock - qty;
 
-await addDoc(collection(db,"orders"),{
+  // Update stock
+  await updateDoc(itemRef,{
+    stock:newStock
+  });
 
-itemName:item.name,
-sku:item.sku,
-quantity:qty,
-user:auth.currentUser.email,
-date:new Date()
+  // Record order
+  await addDoc(collection(db,"orders"),{
 
-});
-
-alert("Order completed!");
-
-document.getElementById("order-form").reset();
-
-loadOrderItems();
-
-}
-
-async function loadOrderHistory(){
-
-  const table = document.getElementById("order-history");
-
-  if(!table) return;
-
-  const snapshot = await getDocs(collection(db,"orders"));
-
-  table.innerHTML = "";
-
-  snapshot.forEach(docItem=>{
-
-    const order = docItem.data();
-
-    table.innerHTML += `
-    <tr>
-      <td>${order.itemName}</td>
-      <td>${order.quantity}</td>
-      <td>${order.username}</td>
-      <td>${order.date?.toDate().toLocaleString() || ""}</td>
-    </tr>
-    `;
+    itemId:itemId,
+    itemName:item.name,
+    quantity:qty,
+    userId:user.uid,
+    username:user.email,
+    date:serverTimestamp()
 
   });
 
+  alert("Order completed!");
+
+}
+
+async function loadOrderHistory() {
+  const table = document.getElementById("order-history");
+  if (!table) return;
+
+  table.innerHTML = "";
+
+  const snapshot = await getDocs(collection(db, "orders"));
+  snapshot.forEach(docItem => {
+    const order = docItem.data();
+    table.innerHTML += `
+      <tr>
+        <td>${order.itemName || '-'}</td>
+        <td>${order.sku || '-'}</td>
+        <td>${order.quantity || 0}</td>
+        <td>${order.user || order.orderedBy || '-'}</td>
+        <td>${order.date ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) : ''}</td>
+      </tr>
+    `;
+  });
 }
 
 // ================== GLOBAL EXPOSE + INIT ==================
@@ -723,16 +719,6 @@ window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
 
 window.addEventListener("DOMContentLoaded", () => {
-
-loadOrderItems();
-
-const orderForm = document.getElementById("order-form");
-
-if(orderForm){
-orderForm.addEventListener("submit",completeOrder);
-}
-
-});
   
   // Apply saved theme on EVERY page
   const saved = localStorage.getItem("theme") || "light";
@@ -779,6 +765,7 @@ orderForm.addEventListener("submit",completeOrder);
   // Auto-load tables
   if (document.getElementById("inventory-table")) loadInventory();
   if (document.getElementById("categories-body")) loadCategories();
+  if (document.getElementById("order-history")) loadOrderHistory();
 });
 
 export { db, loadInventory, addInventoryItem, deleteItem, editItem, openModal, closeModal, loadCategories, addCategory, deleteCategory, openCategoryModal, closeCategoryModal, createAdmin, login, changePassword, logout };
