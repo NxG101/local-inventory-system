@@ -670,36 +670,47 @@ async function placeOrder(e){
 
 async function completeOrder(e) {
     e.preventDefault();
+
     const itemId = document.getElementById("order-item").value;
     const qty = parseInt(document.getElementById("order-qty").value);
     const notes = document.getElementById("order-notes").value.trim();
 
     if (!itemId || !qty) return alert("Please fill all fields");
 
-    const itemRef = doc(db, "inventory", itemId);
-    const itemSnap = await getDoc(itemRef);
-    if (!itemSnap.exists()) return alert("Item not found");
+    try {
+        const itemRef = doc(db, "inventory", itemId);
+        const itemSnap = await getDoc(itemRef);
+        if (!itemSnap.exists()) throw new Error("Item not found");
 
-    const item = itemSnap.data();
-    if (qty > item.stock) return alert("Not enough stock!");
+        const item = itemSnap.data();
+        if (qty > item.stock) throw new Error("Not enough stock!");
 
-    const newStock = item.stock - qty;
+        const newStock = item.stock - qty;
 
-    await updateDoc(itemRef, { stock: newStock });
+        await updateDoc(itemRef, { stock: newStock });
 
-    await addDoc(collection(db, "orders"), {
-        itemName: item.name,
-        sku: item.sku,
-        quantity: qty,
-        user: auth.currentUser.email,
-        notes: notes || null,
-        date: serverTimestamp()
-    });
+        await addDoc(collection(db, "orders"), {
+            itemName: item.name,
+            sku: item.sku || itemId,
+            quantity: qty,
+            user: auth.currentUser.email,
+            notes: notes || null,
+            date: serverTimestamp()
+        });
 
-    alert("✅ Order completed successfully!");
-    document.getElementById("order-form").reset();
-    loadOrderItems();           // refresh dropdown
-    // preview will hide automatically
+        // SUCCESS
+        alert("✅ Order completed successfully!");
+
+        document.getElementById("order-form").reset();
+        loadOrderItems();
+
+        // Full refresh so Inventory + History update instantly
+        setTimeout(() => window.location.reload(), 800);
+
+    } catch (err) {
+        console.error(err);
+        alert("❌ " + (err.message || "Something went wrong — check your ad-blocker or Firebase rules"));
+    }
 }
 
 async function loadOrderHistory() {
