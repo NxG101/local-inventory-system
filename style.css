@@ -179,20 +179,22 @@ h1 {
 /* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.25rem;
     margin-bottom: 2rem;
 }
 
 .stat-card {
     background: var(--bg-card);
-    padding: 1.5rem;
-    border-radius: 8px;
+    padding: 1.4rem;
+    border-radius: 12px;
     border: 1px solid var(--border);
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
 }
 
 .stat-label {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
@@ -200,8 +202,9 @@ h1 {
 }
 
 .stat-value {
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--accent);
 }
 
 /* Table */
