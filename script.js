@@ -352,14 +352,39 @@ function saveAlert() {
 }
 
 async function resetInventory() {
-  if (!confirm("Reset ALL inventory?")) return;
-  if (!ADMIN_KEY) await fetchAdminKey();   // ← THIS FIXES IT
-  const key = prompt("Enter Admin Key:");
-  if (key !== ADMIN_KEY) return alert("Invalid key");
-  const snapshot = await getDocs(collection(db, "inventory"));
-  for (const d of snapshot.docs) await deleteDoc(d.ref);
-  alert("Inventory reset");
-  if (document.getElementById("inventory-table")) loadInventory();
+    if (!confirm("Reset ALL inventory AND order history?\n\nThis action cannot be undone!")) return;
+
+    if (!ADMIN_KEY) await fetchAdminKey();
+
+    const key = prompt("Enter Admin Key:");
+    if (key !== ADMIN_KEY) {
+        showNotification("Invalid key", "error");
+        return;
+    }
+
+    try {
+        // Clear Inventory
+        const invSnapshot = await getDocs(collection(db, "inventory"));
+        for (const d of invSnapshot.docs) {
+            await deleteDoc(d.ref);
+        }
+
+        // Clear Order History
+        const orderSnapshot = await getDocs(collection(db, "orders"));
+        for (const d of orderSnapshot.docs) {
+            await deleteDoc(d.ref);
+        }
+
+        showNotification("✅ Inventory and Order History reset successfully!", "success");
+
+        // Refresh tables on current page
+        if (document.getElementById("inventory-table")) loadInventory();
+        if (document.getElementById("order-history")) loadOrderHistory();
+
+    } catch (err) {
+        console.error(err);
+        showNotification("Error resetting data: " + err.message, "error");
+    }
 }
 
 async function exportBackup() {
