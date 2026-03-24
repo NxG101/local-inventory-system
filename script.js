@@ -563,28 +563,27 @@ async function populateFilterDropdown() {
 }
 
 // ================== Load Item Orders ==================
-async function loadOrderItems() {
+async function loadOrderItems(){
 
-  const select = document.getElementById("order-item");
-  if(!select) return;
+const dropdown = document.getElementById("order-item");
 
-  const snapshot = await getDocs(collection(db,"inventory"));
+if(!dropdown) return;
 
-  select.innerHTML = "";
+dropdown.innerHTML = `<option value="">Select Item</option>`;
 
-  snapshot.forEach(docItem => {
+const snapshot = await getDocs(collection(db,"inventory"));
 
-    const item = docItem.data();
+snapshot.forEach(itemDoc => {
 
-    if(item.stock > 0){
+const item = itemDoc.data();
 
-      select.innerHTML += `
-      <option value="${docItem.id}">
-        ${item.name} (Stock: ${item.stock})
-      </option>`;
-    }
+dropdown.innerHTML += `
+<option value="${itemDoc.id}">
+${item.name} (Stock: ${item.stock})
+</option>
+`;
 
-  });
+});
 
 }
 
@@ -631,47 +630,46 @@ async function placeOrder(e){
 
 async function completeOrder(e){
 
-  e.preventDefault();
+e.preventDefault();
 
-  const itemId = document.getElementById("order-item").value;
-  const qty = parseInt(document.getElementById("order-qty").value);
+const itemId = document.getElementById("order-item").value;
+const qty = parseInt(document.getElementById("order-qty").value);
 
-  const user = auth.currentUser;
+if(!itemId) return alert("Select item");
 
-  if(!user) return alert("User not logged in");
+const itemRef = doc(db,"inventory",itemId);
+const itemSnap = await getDoc(itemRef);
 
-  const itemRef = doc(db,"inventory",itemId);
-  const itemSnap = await getDoc(itemRef);
+if(!itemSnap.exists()) return alert("Item not found");
 
-  if(!itemSnap.exists()) return alert("Item not found");
+const item = itemSnap.data();
 
-  const item = itemSnap.data();
+if(qty > item.stock){
+alert("Not enough stock");
+return;
+}
 
-  if(qty > item.stock){
-    alert("Not enough stock");
-    return;
-  }
+const newStock = item.stock - qty;
 
-  const newStock = item.stock - qty;
+await updateDoc(itemRef,{
+stock:newStock
+});
 
-  // Update stock
-  await updateDoc(itemRef,{
-    stock:newStock
-  });
+await addDoc(collection(db,"orders"),{
 
-  // Record order
-  await addDoc(collection(db,"orders"),{
+itemName:item.name,
+sku:item.sku,
+quantity:qty,
+user:auth.currentUser.email,
+date:new Date()
 
-    itemId:itemId,
-    itemName:item.name,
-    quantity:qty,
-    userId:user.uid,
-    username:user.email,
-    date:serverTimestamp()
+});
 
-  });
+alert("Order completed!");
 
-  alert("Order completed!");
+document.getElementById("order-form").reset();
+
+loadOrderItems();
 
 }
 
@@ -725,6 +723,16 @@ window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
 
 window.addEventListener("DOMContentLoaded", () => {
+
+loadOrderItems();
+
+const orderForm = document.getElementById("order-form");
+
+if(orderForm){
+orderForm.addEventListener("submit",completeOrder);
+}
+
+});
   
   // Apply saved theme on EVERY page
   const saved = localStorage.getItem("theme") || "light";
