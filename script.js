@@ -95,27 +95,34 @@ async function loadInventory() {
 }
 
 function renderInventoryTable(data) {
-  const table = document.getElementById("inventory-table");
-  if (!table) return;
-  table.innerHTML = "";
-  data.forEach(item => {
-    const id = item.id;
-    table.innerHTML += `
-      <tr>
-        <td>${item.name}</td>
-        <td>${item.sku || id}</td>
-        <td>${item.category || "-"}</td>
-        <td>${item.size || "-"}</td>
-        <td>${item.color || "-"}</td>
-        <td>₱${item.price}</td>
-        <td>${item.stock}</td>
-        <td>${item.stock <= 5 ? `<span class="badge badge-low">Low</span>` : `<span class="badge badge-ok">OK</span>`}</td>
-        <td>
-          <button onclick="editItem('${id}')" class="btn-outline">Edit</button>
-          <button onclick="deleteItem('${id}')" class="btn-outline" style="margin-left:5px">Delete</button>
-        </td>
-      </tr>`;
-  });
+    const table = document.getElementById("inventory-table");
+    if (!table) return;
+
+    table.innerHTML = "";
+
+    if (data.length === 0) {
+        table.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem;">No Data Available to Show</td></tr>`;
+        return;
+    }
+
+    data.forEach(item => {
+        const id = item.id;
+        table.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.sku || id}</td>
+                <td>${item.category || "-"}</td>
+                <td>${item.size || "-"}</td>
+                <td>${item.color || "-"}</td>
+                <td>₱${item.price}</td>
+                <td>${item.stock}</td>
+                <td>${item.stock <= 5 ? `<span class="badge badge-low">Low</span>` : `<span class="badge badge-ok">OK</span>`}</td>
+                <td>
+                    <button onclick="editItem('${id}')" class="btn-outline">Edit</button>
+                    <button onclick="deleteItem('${id}')" class="btn-outline" style="margin-left:5px">Delete</button>
+                </td>
+            </tr>`;
+    });
 }
 
 function updateStats(total, low, value, totalStock) {
@@ -243,27 +250,32 @@ function closeModal() {
 
 // ================== CATEGORIES ==================
 async function loadCategories() {
-  const tbody = document.getElementById("categories-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+    const tbody = document.getElementById("categories-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-  const catSnapshot = await getDocs(collection(db, "categories"));
-  const invSnapshot = await getDocs(collection(db, "inventory"));
-  const inventoryItems = invSnapshot.docs.map(d => d.data());
+    const catSnapshot = await getDocs(collection(db, "categories"));
+    const invSnapshot = await getDocs(collection(db, "inventory"));
+    const inventoryItems = invSnapshot.docs.map(d => d.data());
 
-  catSnapshot.forEach(docItem => {
-    const cat = docItem.data();
-    const id = docItem.id;
-    const totalProducts = inventoryItems.filter(item => item.category === cat.name).length;
+    if (catSnapshot.empty) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem;">No categories yet</td></tr>`;
+        return;
+    }
 
-    tbody.innerHTML += `
-      <tr>
-        <td>${cat.name}</td>
-        <td>${cat.description || "-"}</td>
-        <td>${totalProducts}</td>
-        <td><button onclick="deleteCategory('${id}')" class="btn-outline">Delete</button></td>
-      </tr>`;
-  });
+    catSnapshot.forEach(docItem => {
+        const cat = docItem.data();
+        const id = docItem.id;
+        const totalProducts = inventoryItems.filter(item => item.category === cat.name).length;
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${cat.name}</td>
+                <td>${cat.description || "-"}</td>
+                <td>${totalProducts}</td>
+                <td><button onclick="deleteCategory('${id}')" class="btn-outline">Delete</button></td>
+            </tr>`;
+    });
 }
 
 function getCategoryImage(category) {
@@ -352,7 +364,7 @@ function saveAlert() {
 }
 
 async function resetInventory() {
-    if (!confirm("Reset ALL inventory AND order history?\n\nThis action cannot be undone!")) return;
+    if (!confirm("Reset ALL inventory, orders, AND categories?\n\nThis action cannot be undone!")) return;
 
     if (!ADMIN_KEY) await fetchAdminKey();
 
@@ -365,21 +377,22 @@ async function resetInventory() {
     try {
         // Clear Inventory
         const invSnapshot = await getDocs(collection(db, "inventory"));
-        for (const d of invSnapshot.docs) {
-            await deleteDoc(d.ref);
-        }
+        for (const d of invSnapshot.docs) await deleteDoc(d.ref);
 
-        // Clear Order History
+        // Clear Orders
         const orderSnapshot = await getDocs(collection(db, "orders"));
-        for (const d of orderSnapshot.docs) {
-            await deleteDoc(d.ref);
-        }
+        for (const d of orderSnapshot.docs) await deleteDoc(d.ref);
 
-        showNotification("✅ Inventory and Order History reset successfully!", "success");
+        // Clear Categories
+        const catSnapshot = await getDocs(collection(db, "categories"));
+        for (const d of catSnapshot.docs) await deleteDoc(d.ref);
 
-        // Refresh tables on current page
+        showNotification("✅ Inventory, Orders, and Categories reset successfully!", "success");
+
+        // Refresh current page tables
         if (document.getElementById("inventory-table")) loadInventory();
         if (document.getElementById("order-history")) loadOrderHistory();
+        if (document.getElementById("categories-body")) loadCategories();
 
     } catch (err) {
         console.error(err);
@@ -779,6 +792,12 @@ async function loadOrderHistory() {
     table.innerHTML = "";
 
     const snapshot = await getDocs(collection(db, "orders"));
+
+    if (snapshot.empty) {
+        table.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem;">No Orders to Show</td></tr>`;
+        return;
+    }
+
     snapshot.forEach(docItem => {
         const order = docItem.data();
         const notesText = order.notes && order.notes.trim() !== "" ? order.notes : "No Notes Written";
