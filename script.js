@@ -821,6 +821,41 @@ function hideNotification() {
     }, 300);
 }
 
+// ================== CHANGE ROLE (requires Admin Key) ==================
+async function changeRole() {
+    const user = auth.currentUser;
+    if (!user) {
+        showNotification("You must be logged in", "error");
+        return;
+    }
+
+    const newRole = document.getElementById("new-role").value.trim();
+    if (!newRole) {
+        showNotification("Please select a new role", "error");
+        return;
+    }
+
+    if (!ADMIN_KEY) await fetchAdminKey();
+
+    const key = prompt("Enter Admin Key to change role:");
+    if (key !== ADMIN_KEY) {
+        showNotification("Invalid Admin Key", "error");
+        return;
+    }
+
+    try {
+        await updateDoc(doc(db, "users", user.uid), { role: newRole });
+
+        showNotification(`✅ Role changed to <strong>${newRole}</strong>`, "success");
+
+        // Refresh sidebar instantly
+        loadProfile();
+    } catch (err) {
+        console.error(err);
+        showNotification("Error updating role: " + err.message, "error");
+    }
+}
+
 // ================== GLOBAL EXPOSE + INIT ==================
 window.addInventoryItem = addInventoryItem;
 window.loadInventory = loadInventory;
@@ -844,6 +879,7 @@ window.saveProfile = saveProfile;
 window.saveAlert = saveAlert;
 window.showNotification = showNotification;
 window.hideNotification = hideNotification;
+window.changeRole = changeRole;
 
 window.addEventListener("DOMContentLoaded", () => {
 
