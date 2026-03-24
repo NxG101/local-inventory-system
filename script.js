@@ -88,7 +88,8 @@ async function loadInventory() {
     });
 
     renderInventoryTable(allInventory);
-    updateStats(total, low, value);
+    const totalStock = allInventory.reduce((sum, item) => sum + (item.stock || 0), 0);
+    updateStats(total, low, value, totalStock);
   });
 }
 
@@ -116,13 +117,14 @@ function renderInventoryTable(data) {
   });
 }
 
-function updateStats(total, low, value) {
-  const stats = document.querySelectorAll(".stat-value");
-  if (stats.length >= 3) {
-    stats[0].innerText = total;
-    stats[1].innerText = low;
-    stats[2].innerText = `₱${value}`;
-  }
+function updateStats(total, low, value, totalStock) {
+    const stats = document.querySelectorAll(".stat-value");
+    if (stats.length >= 4) {
+        stats[0].innerText = total;
+        stats[1].innerText = low;
+        stats[2].innerText = `₱${value}`;
+        stats[3].innerText = totalStock;
+    }
 }
 
 function applyFilters() {
@@ -681,7 +683,6 @@ async function placeOrder(e){
 
 async function completeOrder(e) {
     e.preventDefault();
-
     const itemId = document.getElementById("order-item").value;
     const qty = parseInt(document.getElementById("order-qty").value);
     const notes = document.getElementById("order-notes").value.trim();
@@ -698,29 +699,33 @@ async function completeOrder(e) {
 
         const newStock = item.stock - qty;
 
+        // Get username from user profile
+        const userRef = doc(db, "users", auth.currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        const username = userSnap.exists() && userSnap.data().username 
+            ? userSnap.data().username 
+            : auth.currentUser.email.split("@")[0];
+
         await updateDoc(itemRef, { stock: newStock });
 
         await addDoc(collection(db, "orders"), {
             itemName: item.name,
             sku: item.sku || itemId,
             quantity: qty,
-            user: auth.currentUser.email,
+            username: username,           // ← this is what we display now
+            user: auth.currentUser.email, // kept for Email column
             notes: notes || null,
             date: serverTimestamp()
         });
 
-        // SUCCESS
         alert("✅ Order completed successfully!");
-
         document.getElementById("order-form").reset();
         loadOrderItems();
-
-        // Full refresh so Inventory + History update instantly
         setTimeout(() => window.location.reload(), 800);
 
     } catch (err) {
         console.error(err);
-        alert("❌ " + (err.message || "Something went wrong — check your ad-blocker or Firebase rules"));
+        alert("❌ " + (err.message || "Something went wrong"));
     }
 }
 
@@ -734,7 +739,6 @@ async function loadOrderHistory() {
     snapshot.forEach(docItem => {
         const order = docItem.data();
         const notesText = order.notes && order.notes.trim() !== "" ? order.notes : "No Notes Written";
-
         const dateStr = order.date 
             ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) 
             : "—";
@@ -744,7 +748,7 @@ async function loadOrderHistory() {
                 <td>${order.itemName || "-"}</td>
                 <td>${order.sku || "-"}</td>
                 <td>${order.quantity || 0}</td>
-                <td>${order.user || "-"}</td>
+                <td>${order.username || order.user || "-"}</td>   <!-- ← Username here -->
                 <td>${order.user || "-"}</td>
                 <td>${dateStr}</td>
                 <td>${notesText}</td>
