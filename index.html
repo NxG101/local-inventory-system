@@ -192,11 +192,15 @@
 
         orders.forEach(order => {
             const dateStr = order.date ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) : "—";
+            
+            // NEW: Always prefer username, fallback to email
+            const orderedBy = order.username || order.user || order.userEmail || "-";
+
             tbody.innerHTML += `
                 <tr>
                     <td>${order.itemName}</td>
                     <td>${order.quantity}</td>
-                    <td>${order.username || order.user || "-"}</td>
+                    <td>${orderedBy}</td>
                     <td>${dateStr}</td>
                 </tr>
             `;
