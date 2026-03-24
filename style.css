@@ -1113,3 +1113,46 @@ main::-webkit-scrollbar-thumb:hover {
         align-items: flex-start;
     }
 }
+
+/* =============================================
+   VISITOR PAGE AUTH BUTTONS
+   Login = blue (matches all .btn buttons)
+   Sign Up = different (outlined)
+   ============================================= */
+.auth-buttons {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.visitor-header {
+    display: flex;
+    align-items: center;
+}
+
+.auth-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.auth-btn:hover {
+    background-color: var(--bg-body);
+    border-color: var(--accent);
+}
+
+.auth-btn.primary {
+    background-color: var(--accent);
+    color: white;
+    border: none;
+}
+
+.auth-btn.primary:hover {
+    background-color: var(--accent-hover);
+}
