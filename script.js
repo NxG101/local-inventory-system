@@ -474,29 +474,35 @@ async function logout() {
 }
 
 async function loadProfile() {
+    const user = auth.currentUser;
+    if (!user) return;
 
-  const user = auth.currentUser;
-  if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
 
-  const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+        const data = userSnap.data();
 
-  if (userSnap.exists()) {
+        // Username
+        if (data.username) {
+            const usernameInput = document.getElementById("profile-username");
+            if (usernameInput) usernameInput.value = data.username;
+            document.querySelectorAll("#username,#sidebar-username")
+                .forEach(el => el.textContent = data.username);
+        }
 
-    const data = userSnap.data();
+        // Role (NEW)
+        const roleEl = document.getElementById("user-role");
+        if (roleEl) {
+            roleEl.textContent = data.role || "Inventory Manager";
+        }
 
-    if (data.username) {
-      const usernameInput = document.getElementById("profile-username");
-      if (usernameInput) usernameInput.value = data.username;
-      document.querySelectorAll("#username,#sidebar-username")
-        .forEach(el => el.textContent = data.username);
+        // Profile image
+        if (data.profileImage) {
+            const preview = document.getElementById("profilePreview");
+            if (preview) preview.src = data.profileImage;
+        }
     }
-
-    if (data.profileImage) {
-      document.getElementById("profilePreview").src = data.profileImage;
-    }
-
-  }
 }
 
 // ================== DYNAMIC CATEGORIES DROPDOWN ==================
@@ -744,13 +750,16 @@ async function loadOrderHistory() {
             ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) 
             : "—";
 
+        // NEW: Always prefer username, fallback to email
+        const orderedBy = order.username || order.user || order.userEmail || "-";
+
         table.innerHTML += `
             <tr>
                 <td>${order.itemName || "-"}</td>
                 <td>${order.sku || "-"}</td>
                 <td>${order.quantity || 0}</td>
-                <td>${order.username || order.user || "-"}</td>   <!-- ← Username here -->
-                <td>${order.user || "-"}</td>
+                <td>${orderedBy}</td>
+                <td>${order.user || order.userEmail || "-"}</td>
                 <td>${dateStr}</td>
                 <td>${notesText}</td>
             </tr>
