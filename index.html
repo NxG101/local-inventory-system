@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Available Stock | STOCK.</title>
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Chart.js for the graph -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <style>
         .visitor-hero {
@@ -48,25 +45,6 @@
             font-weight: 700;
             color: var(--accent);
         }
-
-        .chart-container {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 2rem;
-            border: 1px solid var(--border);
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-
-        .chart-container h3 {
-            margin-bottom: 1rem;
-            color: var(--text-main);
-        }
-
-        /* Make table look premium */
-        .table-container {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
     </style>
 </head>
 
@@ -83,12 +61,6 @@
     <!-- STATS -->
     <div class="stats-grid" id="visitor-stats">
         <!-- Stats injected by JS -->
-    </div>
-
-    <!-- CHART -->
-    <div class="chart-container">
-        <h3>Stock by Category</h3>
-        <canvas id="stockChart" height="280"></canvas>
     </div>
 
     <!-- TABLE -->
@@ -123,36 +95,27 @@
     import { db } from "./script.js";
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-    let allItems = [];
-    let chartInstance = null;
-
     async function loadInventory() {
         const table = document.getElementById("visitor-inventory");
         table.innerHTML = "";
 
         const snapshot = await getDocs(collection(db, "inventory"));
-        allItems = [];
-
         let totalItems = 0;
         let totalValue = 0;
-        const categoryStock = {};
+        let totalCategories = new Set();
 
         snapshot.forEach(doc => {
             const item = doc.data();
             if (item.stock > 0) {
-                allItems.push(item);
-
                 totalItems++;
                 totalValue += (item.price || 0) * item.stock;
-
-                const cat = item.category || "Other";
-                categoryStock[cat] = (categoryStock[cat] || 0) + item.stock;
+                totalCategories.add(item.category || "Other");
 
                 table.innerHTML += `
                     <tr>
                         <td>${item.name}</td>
                         <td>${item.sku || doc.id}</td>
-                        <td>${cat}</td>
+                        <td>${item.category || "Other"}</td>
                         <td>${item.size || "-"}</td>
                         <td>${item.color || "-"}</td>
                         <td>₱${item.price}</td>
@@ -163,10 +126,7 @@
         });
 
         // Render stats
-        renderStats(totalItems, Object.keys(categoryStock).length, totalValue);
-
-        // Render chart
-        renderChart(categoryStock);
+        renderStats(totalItems, totalCategories.size, totalValue);
     }
 
     function renderStats(totalItems, totalCategories, totalValue) {
@@ -185,42 +145,6 @@
                 <div class="stat-value">₱${totalValue.toLocaleString()}</div>
             </div>
         `;
-    }
-
-    function renderChart(categoryStock) {
-        const ctx = document.getElementById("stockChart");
-
-        if (chartInstance) chartInstance.destroy();
-
-        const labels = Object.keys(categoryStock);
-        const data = Object.values(categoryStock);
-
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Stock Quantity',
-                    data: data,
-                    backgroundColor: 'rgba(37, 99, 235, 0.7)',
-                    borderColor: '#2563eb',
-                    borderWidth: 2,
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { backgroundColor: 'var(--bg-card)', titleColor: 'var(--text-main)' }
-                },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'var(--border)' } },
-                    x: { grid: { color: 'var(--border)' } }
-                }
-            }
-        });
     }
 
     window.onload = loadInventory;
