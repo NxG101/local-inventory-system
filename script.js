@@ -872,7 +872,7 @@ async function loadAllUsers() {
     const tableBody = document.getElementById("all-users-table");
     if (!tableBody) return;
 
-    tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Loading users...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Loading users...</td></tr>`;
 
     try {
         const snapshot = await getDocs(collection(db, "users"));
@@ -880,12 +880,13 @@ async function loadAllUsers() {
         tableBody.innerHTML = "";
 
         if (snapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No registered accounts yet</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No registered accounts yet</td></tr>`;
             return;
         }
 
-        snapshot.forEach(doc => {
-            const data = doc.data();
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const id = docSnap.id;
             const roleClass = data.role === "Admin" ? "badge-ok" : "badge-low";
 
             tableBody.innerHTML += `
@@ -893,15 +894,137 @@ async function loadAllUsers() {
                     <td>${data.username || "-"}</td>
                     <td>${data.email || "-"}</td>
                     <td><span class="badge ${roleClass}">${data.role || "Staff"}</span></td>
+                    <td>
+                        <button onclick="editUser('${id}')" class="btn-outline" style="margin-right:4px">Edit</button>
+                        <button onclick="deleteUser('${id}')" class="btn-red">Delete</button>
+                    </td>
                 </tr>
             `;
         });
     } catch (err) {
         console.error(err);
-        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--danger);">Error loading users</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--danger);">Error loading users</td></tr>`;
         showNotification("Error loading users list", "error");
     }
 }
+
+// ================== USER MANAGEMENT (Admin Only) ==================
+let editingUserId = null;
+
+function openUserModal(isEdit = false, userData = null) {
+    editingUserId = isEdit && userData ? userData.id : null;
+
+    document.getElementById("user-modal-title").textContent = isEdit ? "Edit User" : "Add New User";
+
+    const emailInput = document.getElementById("user-email");
+    const passInput = document.getElementById("user-password");
+    const note = document.getElementById("password-note");
+
+    emailInput.value = userData ? userData.email || "" : "";
+    emailInput.readOnly = isEdit;                    // email can't be changed easily
+
+    document.getElementById("user-username").value = userData ? userData.username || "" : "";
+    document.getElementById("user-role-select").value = userData ? userData.role || "Inventory Manager" : "Inventory Manager";
+
+    if (isEdit) {
+        passInput.style.display = "none";
+        note.style.display = "block";
+        passInput.required = false;
+    } else {
+        passInput.style.display = "block";
+        note.style.display = "none";
+        passInput.required = true;
+        passInput.value = "";
+    }
+
+    document.getElementById("user-modal").style.display = "flex";
+}
+
+function closeUserModal() {
+    document.getElementById("user-modal").style.display = "none";
+    editingUserId = null;
+}
+
+async function saveUser() {
+    const user = auth.currentUser;
+    if (!user) return showNotification("You must be logged in", "error");
+
+    const email = document.getElementById("user-email").value.trim();
+    const password = document.getElementById("user-password").value.trim();
+    const username = document.getElementById("user-username").value.trim();
+    const role = document.getElementById("user-role-select").value;
+
+    if (!email || !username || !role) {
+        return showNotification("Email, username and role are required", "error");
+    }
+
+    if (!ADMIN_KEY) await fetchAdminKey();
+
+    const key = prompt("Enter Admin Key to continue:");
+    if (key !== ADMIN_KEY) {
+        return showNotification("Invalid Admin Key", "error");
+    }
+
+    try {
+        if (!editingUserId) {
+            // ADD NEW USER
+            if (!password) return showNotification("Password is required for new users", "error");
+
+            const cred = await createUserWithEmailAndPassword(auth, email, password);
+            await setDoc(doc(db, "users", cred.user.uid), {
+                email,
+                username,
+                role,
+                createdAt: new Date().toISOString()
+            });
+
+            showNotification(`✅ New user <strong>${username}</strong> created!`, "success");
+        } else {
+            // EDIT EXISTING USER
+            await updateDoc(doc(db, "users", editingUserId), { username, role });
+            showNotification(`✅ User updated successfully!`, "success");
+        }
+
+        closeUserModal();
+        loadAllUsers();           // refresh table
+    } catch (err) {
+        console.error(err);
+        showNotification("Error: " + err.message, "error");
+    }
+}
+
+async function editUser(uid) {
+    try {
+        const snap = await getDoc(doc(db, "users", uid));
+        if (!snap.exists()) return showNotification("User not found", "error");
+
+        const data = snap.data();
+        data.id = uid;                    // attach id for editing
+        openUserModal(true, data);
+    } catch (err) {
+        showNotification("Error loading user data", "error");
+    }
+}
+
+async function deleteUser(uid) {
+    if (!confirm("Delete this user permanently?\n\nThis cannot be undone.")) return;
+
+    if (!ADMIN_KEY) await fetchAdminKey();
+
+    const key = prompt("Enter Admin Key to delete user:");
+    if (key !== ADMIN_KEY) {
+        return showNotification("Invalid Admin Key", "error");
+    }
+
+    try {
+        await deleteDoc(doc(db, "users", uid));
+        showNotification("✅ User deleted", "success");
+        loadAllUsers();
+    } catch (err) {
+        showNotification("Error deleting user: " + err.message, "error");
+    }
+}
+
 // ================== GLOBAL EXPOSE + INIT ==================
 window.addInventoryItem = addInventoryItem;
 window.loadInventory = loadInventory;
@@ -927,6 +1050,11 @@ window.showNotification = showNotification;
 window.hideNotification = hideNotification;
 window.changeRole = changeRole;
 window.loadAllUsers = loadAllUsers;
+window.openUserModal = openUserModal;
+window.closeUserModal = closeUserModal;
+window.saveUser = saveUser;
+window.editUser = editUser;
+window.deleteUser = deleteUser;
 
 window.addEventListener("DOMContentLoaded", () => {
 
