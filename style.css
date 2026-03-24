@@ -949,3 +949,11 @@ main::-webkit-scrollbar-thumb:hover {
         padding: 2rem 1.25rem !important;
     }
 }
+
+.stats-grid .stat-card {
+    padding: 1.4rem;
+}
+
+.stats-grid .stat-value {
+    font-size: 1.75rem;
+}
