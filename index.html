@@ -1,126 +1,229 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock Viewer | Minimal Inventory</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Stock | STOCK.</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Chart.js for the graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-<style>
-.visitor-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:2rem;
-}
+    <style>
+        .visitor-hero {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .visitor-hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .visitor-hero p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
 
-.auth-buttons{
-    display:flex;
-    gap:10px;
-}
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
 
-.auth-buttons a{
-    text-decoration:none;
-}
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.75rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
 
-.auth-btn{
-    padding:0.75rem 1.25rem;
-    border-radius:8px;
-    font-size:0.95rem;
-    border:1px solid var(--border);
-    background:var(--bg-card);
-    color: var(--text-main);
-    cursor:pointer;
-    transition: all 0.2s;
-}
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
 
-.auth-btn.primary{
-    background:var(--accent);
-    color:white;
-    border:none;
-}
+        .chart-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
 
-.auth-btn:hover{
-    opacity:0.9;
-    transform: translateY(-1px);
-}
-</style>
+        .chart-container h3 {
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
 
+        /* Make table look premium */
+        .table-container {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+    </style>
 </head>
 
 <body>
 
-<main style="width:100%; padding:2rem 3rem;">
+<main style="width:100%; padding:2rem 3rem; max-width:1200px; margin:0 auto;">
 
-<div class="visitor-header">
+    <!-- HERO -->
+    <div class="visitor-hero">
+        <h1>Available Stock</h1>
+        <p>Real-time clothing inventory • Updated live from our warehouse</p>
+    </div>
 
-<div>
-<h1>Available Stock</h1>
-<p style="color:var(--text-muted);font-size:0.9rem;">
-View current available clothing items
-</p>
-</div>
+    <!-- STATS -->
+    <div class="stats-grid" id="visitor-stats">
+        <!-- Stats injected by JS -->
+    </div>
 
-<div class="auth-buttons">
-<a href="login.html"><button class="auth-btn">Log In</button></a>
-<a href="signup.html"><button class="auth-btn primary">Sign Up</button></a>
-</div>
+    <!-- CHART -->
+    <div class="chart-container">
+        <h3>Stock by Category</h3>
+        <canvas id="stockChart" height="280"></canvas>
+    </div>
 
-</div>
+    <!-- TABLE -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Size</th>
+                    <th>Color</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody id="visitor-inventory"></tbody>
+        </table>
+    </div>
 
-<!-- Inventory Table -->
-
-<div class="table-container">
-<table>
-
-<thead>
-<tr>
-<th>Product</th>
-<th>SKU</th>
-<th>Category</th>
-<th>Size</th>
-<th>Color</th>
-<th>Price</th>
-<th>Stock</th>
-</tr>
-</thead>
-
-<tbody id="visitor-inventory">
-
-</tbody>
-
-</table>
-</div>
+    <!-- AUTH BUTTONS -->
+    <div class="visitor-header" style="margin-top:2rem; justify-content:flex-end;">
+        <div class="auth-buttons">
+            <a href="login.html"><button class="auth-btn">Log In</button></a>
+            <a href="signup.html"><button class="auth-btn primary">Sign Up</button></a>
+        </div>
+    </div>
 
 </main>
 
 <script type="module">
-import { db } from "./script.js";
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { db } from "./script.js";
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-const table = document.getElementById("visitor-inventory");
+    let allItems = [];
+    let chartInstance = null;
 
-async function loadInventory(){
-    table.innerHTML = "";
-    const snapshot = await getDocs(collection(db,"inventory"));
-    snapshot.forEach(doc=>{
-        const item = doc.data();
-        if(item.stock > 0){
-            table.innerHTML += `
-            <tr>
-                <td>${item.name}</td>
-                <td>${item.sku || doc.id}</td>
-                <td>${item.category || "-"}</td>
-                <td>${item.size || "-"}</td>
-                <td>${item.color || "-"}</td>
-                <td>₱${item.price}</td>
-                <td>${item.stock}</td>
-            </tr>
-            `;
-        }
-    });
-}
-window.onload = loadInventory;
+    async function loadInventory() {
+        const table = document.getElementById("visitor-inventory");
+        table.innerHTML = "";
+
+        const snapshot = await getDocs(collection(db, "inventory"));
+        allItems = [];
+
+        let totalItems = 0;
+        let totalValue = 0;
+        const categoryStock = {};
+
+        snapshot.forEach(doc => {
+            const item = doc.data();
+            if (item.stock > 0) {
+                allItems.push(item);
+
+                totalItems++;
+                totalValue += (item.price || 0) * item.stock;
+
+                const cat = item.category || "Other";
+                categoryStock[cat] = (categoryStock[cat] || 0) + item.stock;
+
+                table.innerHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.sku || doc.id}</td>
+                        <td>${cat}</td>
+                        <td>${item.size || "-"}</td>
+                        <td>${item.color || "-"}</td>
+                        <td>₱${item.price}</td>
+                        <td><strong>${item.stock}</strong></td>
+                    </tr>
+                `;
+            }
+        });
+
+        // Render stats
+        renderStats(totalItems, Object.keys(categoryStock).length, totalValue);
+
+        // Render chart
+        renderChart(categoryStock);
+    }
+
+    function renderStats(totalItems, totalCategories, totalValue) {
+        const container = document.getElementById("visitor-stats");
+        container.innerHTML = `
+            <div class="stat-card">
+                <div style="color:var(--text-muted);font-size:0.85rem;">AVAILABLE ITEMS</div>
+                <div class="stat-value">${totalItems}</div>
+            </div>
+            <div class="stat-card">
+                <div style="color:var(--text-muted);font-size:0.85rem;">CATEGORIES</div>
+                <div class="stat-value">${totalCategories}</div>
+            </div>
+            <div class="stat-card">
+                <div style="color:var(--text-muted);font-size:0.85rem;">TOTAL VALUE</div>
+                <div class="stat-value">₱${totalValue.toLocaleString()}</div>
+            </div>
+        `;
+    }
+
+    function renderChart(categoryStock) {
+        const ctx = document.getElementById("stockChart");
+
+        if (chartInstance) chartInstance.destroy();
+
+        const labels = Object.keys(categoryStock);
+        const data = Object.values(categoryStock);
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Stock Quantity',
+                    data: data,
+                    backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                    borderColor: '#2563eb',
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: 'var(--bg-card)', titleColor: 'var(--text-main)' }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'var(--border)' } },
+                    x: { grid: { color: 'var(--border)' } }
+                }
+            }
+        });
+    }
+
+    window.onload = loadInventory;
 </script>
 
 </body>
