@@ -123,10 +123,12 @@
         let totalValue = 0;
         let totalCategories = new Set();
         let totalStock = 0;
+        let hasData = false;                    // ← NEW
 
         snapshot.forEach(doc => {
             const item = doc.data();
             if (item.stock > 0) {
+                hasData = true;                 // ← NEW
                 totalItems++;
                 totalValue += (item.price || 0) * item.stock;
                 totalCategories.add(item.category || "Other");
@@ -145,6 +147,16 @@
                 `;
             }
         });
+
+        if (!hasData) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem;">
+                        No Data Available to Show
+                    </td>
+                </tr>
+            `;
+        }        
 
         renderStats(totalItems, totalCategories.size, totalValue, totalStock);
         loadRecentOrdersToday();
