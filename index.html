@@ -92,7 +92,6 @@
                     <tr>
                         <th>Product</th>
                         <th>Quantity</th>
-                        <th>Ordered By</th>
                         <th>Date</th>
                     </tr>
                 </thead>
@@ -192,22 +191,18 @@
 
         orders.forEach(order => {
             const dateStr = order.date ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) : "—";
-            
-            // NEW: Always prefer username, fallback to email
-            const orderedBy = order.username || order.user || order.userEmail || "-";
 
             tbody.innerHTML += `
                 <tr>
                     <td>${order.itemName}</td>
                     <td>${order.quantity}</td>
-                    <td>${orderedBy}</td>
                     <td>${dateStr}</td>
                 </tr>
             `;
         });
 
         if (orders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No orders today</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No orders today</td></tr>`;
         }
     }
 
