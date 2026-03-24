@@ -29,6 +29,7 @@ window.db = db;
 
 let ADMIN_KEY = "";
 let editingId = null;
+let editingCategoryId = null;
 let allInventory = [];
 let inventoryUnsubscribe = null;
 let notificationTimeout = null;
@@ -273,43 +274,88 @@ async function loadCategories() {
                 <td>${cat.name}</td>
                 <td>${cat.description || "-"}</td>
                 <td>${totalProducts}</td>
-                <td><button onclick="deleteCategory('${id}')" class="btn-outline">Delete</button></td>
+                <td>
+                    <button onclick="editCategory('${id}')" class="btn-outline">Edit</button>
+                    <button onclick="deleteCategory('${id}')" class="btn-outline" style="margin-left:5px">Delete</button>
+                </td>
             </tr>`;
     });
 }
 
-function getCategoryImage(category) {
-  const map = {
-    Top: "./images/top.png",
-    Bottom: "./images/bottom.png",
-    Outerwear: "./images/outerwear.png",
-    Accessories: "./images/accessories.png"
-  };
+async function editCategory(id) {
+    try {
+        const snap = await getDoc(doc(db, "categories", id));
+        if (!snap.exists()) return showNotification("Category not found", "error");
 
-  return map[category] || "./images/default.png";
+        const cat = snap.data();
+        editingCategoryId = id;
+
+        const modalTitle = document.querySelector("#category-modal h2");
+        modalTitle.textContent = "Edit Category";
+
+        document.getElementById("c-name").value = cat.name || "";
+        document.getElementById("c-desc").value = cat.description || "";
+
+        openCategoryModal();
+    } catch (err) {
+        showNotification("Error loading category: " + err.message, "error");
+    }
 }
 
-async function addCategory(e) {
-  e.preventDefault();
-  const name = document.getElementById("c-name").value.trim();
-  const desc = document.getElementById("c-desc").value.trim();
-  if (!name) return;
-  await addDoc(collection(db, "categories"), { name, description: desc });
-  closeCategoryModal();
-  loadCategories();
-}
+async function saveCategory(e) {
+    e.preventDefault();
+    const name = document.getElementById("c-name").value.trim();
+    const desc = document.getElementById("c-desc").value.trim();
 
-async function deleteCategory(id) {
-  if (!confirm("Delete category?")) return;
-  await deleteDoc(doc(db, "categories", id));
-  loadCategories();
+    if (!name) {
+        return showNotification("Category name is required", "error");
+    }
+
+    try {
+        if (editingCategoryId) {
+            await updateDoc(doc(db, "categories", editingCategoryId), { name, description: desc });
+            showNotification("✅ Category updated successfully!", "success");
+            editingCategoryId = null;
+        } else {
+            await addDoc(collection(db, "categories"), { name, description: desc });
+            showNotification("✅ Category added successfully!", "success");
+        }
+
+        closeCategoryModal();
+        loadCategories();
+    } catch (err) {
+        console.error(err);
+        showNotification("Error: " + err.message, "error");
+    }
 }
 
 function openCategoryModal() {
-  document.getElementById("category-modal").style.display = "flex";
+    document.getElementById("category-modal").style.display = "flex";
 }
+
 function closeCategoryModal() {
-  document.getElementById("category-modal").style.display = "none";
+    document.getElementById("category-modal").style.display = "none";
+
+    const modalTitle = document.querySelector("#category-modal h2");
+    if (modalTitle) modalTitle.textContent = "Add New Category";
+
+    editingCategoryId = null;
+
+    // Clear form
+    document.getElementById("c-name").value = "";
+    document.getElementById("c-desc").value = "";
+}
+
+async function deleteCategory(id) {
+    if (!confirm("Delete this category?")) return;
+
+    try {
+        await deleteDoc(doc(db, "categories", id));
+        showNotification("✅ Category deleted!", "success");
+        loadCategories();
+    } catch (err) {
+        showNotification("Error deleting category: " + err.message, "error");
+    }
 }
 
 // ================== SETTINGS & BACKUP ==================
@@ -1052,7 +1098,8 @@ window.editItem = editItem;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.loadCategories = loadCategories;
-window.addCategory = addCategory;
+window.saveCategory = saveCategory;
+window.editCategory = editCategory;
 window.deleteCategory = deleteCategory;
 window.openCategoryModal = openCategoryModal;
 window.closeCategoryModal = closeCategoryModal;
@@ -1125,7 +1172,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Category form
     const catForm = document.getElementById("add-category-form");
-    if (catForm) catForm.addEventListener("submit", addCategory);
+    if (catForm) catForm.addEventListener("submit", saveCategory);
 
     const addForm = document.getElementById("add-form");
     if (addForm) {
