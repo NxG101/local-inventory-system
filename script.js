@@ -725,24 +725,32 @@ async function completeOrder(e) {
 }
 
 async function loadOrderHistory() {
-  const table = document.getElementById("order-history");
-  if (!table) return;
+    const table = document.getElementById("order-history");
+    if (!table) return;
 
-  table.innerHTML = "";
+    table.innerHTML = "";
 
-  const snapshot = await getDocs(collection(db, "orders"));
-  snapshot.forEach(docItem => {
-    const order = docItem.data();
-    table.innerHTML += `
-      <tr>
-        <td>${order.itemName || '-'}</td>
-        <td>${order.sku || '-'}</td>
-        <td>${order.quantity || 0}</td>
-        <td>${order.user || order.orderedBy || '-'}</td>
-        <td>${order.date ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) : ''}</td>
-      </tr>
-    `;
-  });
+    const snapshot = await getDocs(collection(db, "orders"));
+    snapshot.forEach(docItem => {
+        const order = docItem.data();
+        const notesText = order.notes && order.notes.trim() !== "" ? order.notes : "No Notes Written";
+
+        const dateStr = order.date 
+            ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) 
+            : "—";
+
+        table.innerHTML += `
+            <tr>
+                <td>${order.itemName || "-"}</td>
+                <td>${order.sku || "-"}</td>
+                <td>${order.quantity || 0}</td>
+                <td>${order.user || "-"}</td>
+                <td>${order.user || "-"}</td>
+                <td>${dateStr}</td>
+                <td>${notesText}</td>
+            </tr>
+        `;
+    });
 }
 
 // ================== GLOBAL EXPOSE + INIT ==================
@@ -803,7 +811,7 @@ window.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-    
+
     // Filters
     const search = document.getElementById("search");
     const filterCat = document.getElementById("filter-category");
