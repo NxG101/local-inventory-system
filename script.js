@@ -350,16 +350,18 @@ function saveAlert() {
 
 async function resetInventory() {
   if (!confirm("Reset ALL inventory?")) return;
+  if (!ADMIN_KEY) await fetchAdminKey();   // ← THIS FIXES IT
   const key = prompt("Enter Admin Key:");
   if (key !== ADMIN_KEY) return alert("Invalid key");
   const snapshot = await getDocs(collection(db, "inventory"));
   for (const d of snapshot.docs) await deleteDoc(d.ref);
   alert("Inventory reset");
-  loadInventory();
+  if (document.getElementById("inventory-table")) loadInventory();
 }
 
 async function exportBackup() {
   if (!confirm("Export backup?")) return;
+  if (!ADMIN_KEY) await fetchAdminKey();   // ← THIS FIXES IT
   const key = prompt("Enter Admin Key:");
   if (key !== ADMIN_KEY) return alert("Invalid key");
   const snapshot = await getDocs(collection(db, "inventory"));
@@ -439,6 +441,7 @@ async function login() {
 }
 
 async function changePassword() {
+  if (!ADMIN_KEY) await fetchAdminKey();
   const key = prompt("Enter Admin Key:");
   if (key !== ADMIN_KEY) return alert("Invalid key");
   const newPass = document.getElementById("new-password").value;
@@ -812,6 +815,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("inventory-table")) loadInventory();
     if (document.getElementById("categories-body")) loadCategories();
     if (document.getElementById("order-history")) loadOrderHistory(); // from previous fix
-});
+    fetchAdminKey();
+  });
 
 export { db, loadInventory, addInventoryItem, deleteItem, editItem, openModal, closeModal, loadCategories, addCategory, deleteCategory, openCategoryModal, closeCategoryModal, createAdmin, login, changePassword, logout };
