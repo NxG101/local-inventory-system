@@ -155,7 +155,7 @@ h1 {
 }
 
 .btn {
-    background-color: var(--text-main);
+    background-color: var(--accent);
     color: white;
     border: none;
     padding: 0.6rem 1.2rem;
@@ -167,7 +167,7 @@ h1 {
 }
 
 .btn:hover {
-    background-color: #374151;
+    background-color: var(--accent-hover);
 }
 
 /* Stats Grid */
