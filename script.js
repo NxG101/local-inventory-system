@@ -516,7 +516,7 @@ async function loadProfile() {
                 .forEach(el => el.textContent = data.username);
         }
 
-        // Role (NEW)
+        // Role
         const roleEl = document.getElementById("user-role");
         if (roleEl) {
             roleEl.textContent = data.role || "Inventory Manager";
@@ -526,6 +526,17 @@ async function loadProfile() {
         if (data.profileImage) {
             const preview = document.getElementById("profilePreview");
             if (preview) preview.src = data.profileImage;
+        }
+
+        // NEW: Show "All Registered Accounts" only for Admin
+        const adminSection = document.getElementById("admin-users-section");
+        if (adminSection) {
+            if (data.role === "Admin") {
+                adminSection.style.display = "block";
+                loadAllUsers();           // ← loads the table
+            } else {
+                adminSection.style.display = "none";
+            }
         }
     }
 }
@@ -856,6 +867,41 @@ async function changeRole() {
     }
 }
 
+// ================== LOAD ALL REGISTERED USERS (Admin Only) ==================
+async function loadAllUsers() {
+    const tableBody = document.getElementById("all-users-table");
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Loading users...</td></tr>`;
+
+    try {
+        const snapshot = await getDocs(collection(db, "users"));
+
+        tableBody.innerHTML = "";
+
+        if (snapshot.empty) {
+            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No registered accounts yet</td></tr>`;
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const roleClass = data.role === "Admin" ? "badge-ok" : "badge-low";
+
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${data.username || "-"}</td>
+                    <td>${data.email || "-"}</td>
+                    <td><span class="badge ${roleClass}">${data.role || "Staff"}</span></td>
+                </tr>
+            `;
+        });
+    } catch (err) {
+        console.error(err);
+        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--danger);">Error loading users</td></tr>`;
+        showNotification("Error loading users list", "error");
+    }
+}
 // ================== GLOBAL EXPOSE + INIT ==================
 window.addInventoryItem = addInventoryItem;
 window.loadInventory = loadInventory;
@@ -880,6 +926,7 @@ window.saveAlert = saveAlert;
 window.showNotification = showNotification;
 window.hideNotification = hideNotification;
 window.changeRole = changeRole;
+window.loadAllUsers = loadAllUsers;
 
 window.addEventListener("DOMContentLoaded", () => {
 
