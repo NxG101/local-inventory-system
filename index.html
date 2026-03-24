@@ -8,40 +8,44 @@
 
 <style>
 .visitor-header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:2rem;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:2rem;
 }
 
 .auth-buttons{
-display:flex;
-gap:10px;
+    display:flex;
+    gap:10px;
 }
 
 .auth-buttons a{
-text-decoration:none;
+    text-decoration:none;
 }
 
 .auth-btn{
-padding:0.5rem 1rem;
-border-radius:6px;
-font-size:0.85rem;
-border:1px solid var(--border);
-background:var(--bg-card);
-cursor:pointer;
+    padding:0.5rem 1rem;
+    border-radius:6px;
+    font-size:0.85rem;
+    border:1px solid var(--border);
+    background:var(--bg-card);
+    color: var(--text-main);
+    cursor:pointer;
+    transition: all 0.2s;
 }
 
 .auth-btn.primary{
-background:var(--text-main);
-color:white;
-border:none;
+    background:var(--accent);           /* now blue in both themes */
+    color:white;
+    border:none;
 }
 
 .auth-btn:hover{
-opacity:0.9;
+    opacity:0.9;
+    transform: translateY(-1px);
 }
 </style>
+
 </head>
 
 <body>
