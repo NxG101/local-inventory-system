@@ -750,7 +750,6 @@ async function loadOrderHistory() {
             ? (order.date.toDate ? order.date.toDate().toLocaleString() : new Date(order.date).toLocaleString()) 
             : "—";
 
-        // NEW: Always prefer username, fallback to email
         const orderedBy = order.username || order.user || order.userEmail || "-";
 
         table.innerHTML += `
@@ -759,7 +758,6 @@ async function loadOrderHistory() {
                 <td>${order.sku || "-"}</td>
                 <td>${order.quantity || 0}</td>
                 <td>${orderedBy}</td>
-                <td>${order.user || order.userEmail || "-"}</td>
                 <td>${dateStr}</td>
                 <td>${notesText}</td>
             </tr>
