@@ -479,7 +479,7 @@ margin-right:4px;
 background:var(--bg-body);
 }
 
-/* LOGIN PAGE */
+/* LOGIN PAGE - now fully responsive on mobile */
 
 .login-wrapper{
     width:100%;
@@ -490,7 +490,6 @@ background:var(--bg-body);
 }
 
 /* Card */
-
 .login-card{
     width:380px;
     background:var(--bg-card);
@@ -500,7 +499,6 @@ background:var(--bg-body);
 }
 
 /* Logo */
-
 .login-logo{
     font-size:1.4rem;
     font-weight:700;
@@ -509,7 +507,6 @@ background:var(--bg-body);
 }
 
 /* Title */
-
 .login-title{
     font-size:1.2rem;
     font-weight:600;
@@ -523,7 +520,6 @@ background:var(--bg-body);
 }
 
 /* Form */
-
 .login-form .form-group{
     margin-bottom:1rem;
 }
@@ -539,7 +535,6 @@ background:var(--bg-body);
 }
 
 /* Options */
-
 .login-options{
     display:flex;
     justify-content:space-between;
@@ -558,14 +553,12 @@ background:var(--bg-body);
 }
 
 /* Button */
-
 .login-btn{
     width:100%;
     margin-top:0.5rem;
 }
 
 /* Footer */
-
 .login-footer{
     margin-top:1.5rem;
     text-align:center;
@@ -804,27 +797,39 @@ table {
         padding: 0.75rem 1.25rem;
         font-size: 0.95rem;
     }
+}
 
     /* LOGIN & SIGNUP PAGES - make card big and clean on phone */
+@media (max-width: 768px) {
     .login-wrapper {
         padding: 1rem;
     }
 
     .login-card {
-        width: 100%;
-        max-width: 100%;
-        padding: 2rem 1.5rem;
-        border-radius: 12px;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 2.25rem 1.5rem !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     }
 
     .login-form input {
-        font-size: 1rem;
-        padding: 0.9rem;
+        font-size: 1.05rem !important;
+        padding: 1rem !important;
     }
 
     .login-btn {
-        padding: 0.85rem;
-        font-size: 1rem;
+        padding: 1rem !important;
+        font-size: 1.05rem !important;
+        border-radius: 8px !important;
+    }
+
+    .login-logo {
+        font-size: 1.6rem !important;
+    }
+
+    .login-title {
+        font-size: 1.3rem !important;
     }
 }
 
